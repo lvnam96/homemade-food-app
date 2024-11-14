@@ -11,6 +11,16 @@
     "format": "prettier --write .",
     "typecheck": "tsc"
   },
+  "browserslist": {
+    "production": [
+      ">0.01% in VN and not dead and not op_mini all and not iOS <15 and not chrome <91 and not safari <15.5 and not samsung <15 and not opera <83"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
   "dependencies": {
     "@remix-run/node": "^2.14.0",
     "@remix-run/react": "^2.14.0",
