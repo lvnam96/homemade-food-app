@@ -4,6 +4,7 @@
   "sideEffects": false,
   "type": "module",
   "scripts": {
+    "prepare": "husky",
     "build": "remix vite:build",
     "dev": "remix vite:dev",
     "lint": "eslint --ignore-path .gitignore --cache --cache-location ./node_modules/.cache/eslint .",
@@ -11,6 +12,17 @@
     "start": "remix-serve ./build/server/index.js",
     "format": "prettier --write .",
     "typecheck": "tsc"
+  },
+  "lint-staged": {
+    "*.{css,scss}": [
+      "stylelint --report-needless-disables --report-invalid-scope-disables --report-descriptionless-disables --fix",
+      "prettier --write",
+      "git add"
+    ],
+    "*.{json,ts,tsx,js,jsx,md}": [
+      "prettier --write",
+      "git add"
+    ]
   },
   "browserslist": {
     "production": [
