@@ -6,11 +6,18 @@
 
 import { PassThrough } from 'node:stream';
 
-import type { AppLoadContext, EntryContext } from '@remix-run/node';
+import type { AppLoadContext, EntryContext, LoaderFunctionArgs } from '@remix-run/node';
 import { createReadableStreamFromReadable } from '@remix-run/node';
 import { RemixServer } from '@remix-run/react';
 import { isbot } from 'isbot';
 import { renderToPipeableStream } from 'react-dom/server';
+import * as Sentry from '@sentry/remix';
+
+export const handleError = Sentry.wrapHandleErrorWithSentry((error, { request }) => {
+  console.group(`Server entry error at "${(request as LoaderFunctionArgs['request']).url}":`);
+  console.error(error);
+  console.groupEnd();
+});
 
 const ABORT_DELAY = 5_000;
 
