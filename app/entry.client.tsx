@@ -11,7 +11,7 @@ import { hydrateRoot } from 'react-dom/client';
 
 Sentry.init({
   dsn: import.meta.env.PUBLIC_SENTRY_DSN,
-  tracesSampleRate: 1,
+  tracesSampleRate: import.meta.env.DEV ? 0 : 1,
 
   integrations: [
     Sentry.browserTracingIntegration({
