@@ -35,12 +35,16 @@
     ]
   },
   "dependencies": {
+    "@neondatabase/serverless": "^0.10.3",
     "@remix-run/node": "^2.14.0",
     "@remix-run/react": "^2.14.0",
     "@remix-run/serve": "^2.14.0",
     "@sentry/remix": "^8.38.0",
     "@sentry/vite-plugin": "^2.22.6",
+    "dotenv": "^16.4.5",
+    "drizzle-orm": "^0.36.4",
     "isbot": "^5.1.17",
+    "pg": "^8.13.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
@@ -50,11 +54,13 @@
     "@commitlint/types": "^19.5.0",
     "@remix-run/dev": "^2.14.0",
     "@tailwindcss/nesting": "0.0.0-insiders.565cd3e",
+    "@types/pg": "^8.11.10",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@typescript-eslint/eslint-plugin": "^7.18.0",
     "@typescript-eslint/parser": "^7.18.0",
     "autoprefixer": "^10.4.20",
+    "drizzle-kit": "^0.28.1",
     "eslint": "^8.57.1",
     "eslint-config-prettier": "^9.1.0",
     "eslint-import-resolver-typescript": "^3.6.3",
@@ -77,6 +83,7 @@
     "stylelint": "^16.10.0",
     "stylelint-config-standard": "^36.0.1",
     "tailwindcss": "^3.4.14",
+    "tsx": "^4.19.2",
     "typescript": "^5.6.3",
     "vite": "^5.4.11",
     "vite-tsconfig-paths": "^5.1.2"
