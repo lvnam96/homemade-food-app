@@ -1,40 +1,14 @@
-# Welcome to Remix!
+[![Better Stack Badge](https://uptime.betterstack.com/status-badges/v1/monitor/1omb5.svg)](https://uptime.betterstack.com/?utm_source=status_badge)
+[![wakatime](https://wakatime.com/badge/user/627979e0-f793-4b0a-b22f-899fedaabd2e/project/ee423f4f-df27-4e49-bc46-fee69d5f44b7.svg)](https://wakatime.com/badge/user/627979e0-f793-4b0a-b22f-899fedaabd2e/project/ee423f4f-df27-4e49-bc46-fee69d5f44b7)
 
-- 📖 [Remix docs](https://remix.run/docs)
+## Database schema
 
-## Development
+<iframe width="1024" height="768" src='https://dbdiagram.io/e/67400013e9daa85aca53cffc/6740396ae9daa85aca58fa1e'> </iframe>
 
-Run the dev server:
+_See it as [structured documentation](https://dbdocs.io/lvnam96/Homemade-food-app)._
 
-```shellscript
-npm run dev
-```
+## Status page
 
-## Deployment
+<iframe src="https://status.lvnam.dev/badge?theme=dark" width="250" height="30" frameborder="0" scrolling="no"></iframe>
 
-First, build your app for production:
-
-```sh
-npm run build
-```
-
-Then run the app in production mode:
-
-```sh
-npm start
-```
-
-Now you'll need to pick a host to deploy it to.
-
-### DIY
-
-If you're familiar with deploying Node applications, the built-in Remix app server is production-ready.
-
-Make sure to deploy the output of `npm run build`
-
-- `build/server`
-- `build/client`
-
-## Styling
-
-This template comes with [Tailwind CSS](https://tailwindcss.com/) already configured for a simple default starting experience. You can use whatever css framework you prefer. See the [Vite docs on css](https://vitejs.dev/guide/features.html#css) for more information.
+> All services's status is tracked at https://status.lvnam.dev
