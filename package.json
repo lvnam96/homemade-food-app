@@ -43,6 +43,7 @@
     "@sentry/vite-plugin": "^2.22.6",
     "dotenv": "^16.4.5",
     "drizzle-orm": "^0.36.4",
+    "fastest-validator": "^1.19.0",
     "isbot": "^5.1.17",
     "pg": "^8.13.1",
     "react": "^18.3.1",
