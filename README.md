@@ -12,3 +12,18 @@ _See it as [structured documentation](https://dbdocs.io/lvnam96/Homemade-food-ap
 <iframe src="https://status.lvnam.dev/badge?theme=dark" width="250" height="30" frameborder="0" scrolling="no"></iframe>
 
 > All services's status is tracked at https://status.lvnam.dev
+
+## Development
+
+For first-time database setup, there will be a bash script at `./app/.server/db/setup_db.sh` for easier setup PostgreSQL database.
+
+```bash
+# First-time setup
+pnpm install && chmod 700 ./app/.server/db/setup_db.sh && ./app/.server/db/setup_db.sh
+```
+
+Init dev server:
+
+```bash
+pnpm dev
+```
