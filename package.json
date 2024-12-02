@@ -4,6 +4,7 @@
   "sideEffects": false,
   "type": "module",
   "scripts": {
+    "db:sample": "tsx ./app/.server/db/sample.ts",
     "prepare": "husky",
     "build": "remix vite:build",
     "db:up": "docker compose -f docker-compose-db.yml up",
