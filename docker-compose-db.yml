@@ -1,0 +1,39 @@
+name: homemade-food-db
+
+services:
+  postgres:
+    image: postgres:17-alpine3.20
+    container_name: homemadefood-db.dev.postgres
+    # command: '-d 1' # set debug-level
+    env_file: .env
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=samples3cr3t
+      - POSTGRES_DB=postgres
+    ports:
+      - '54320:5432'
+    restart: always
+    healthcheck:
+      # Github issue with posgres health check command `pg_isready`: https://github.com/peter-evans/docker-compose-healthcheck/issues/16#issuecomment-1420377736
+      test: ['CMD-SHELL', 'psql -h localhost -U $POSTGRES_USER -d $POSTGRES_DB -c "select 1"']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+  # Refs:
+  # https://github.com/timowilhelm/local-neon-http-proxy
+  # https://neon.tech/guides/local-development-with-neon
+  # neon_proxy:
+  #   image: ghcr.io/timowilhelm/local-neon-http-proxy:main
+  #   container_name: homemade-food-db.dev.neon_proxy
+  #   env_file: .env
+  #   ports:
+  #     - '4444:4444'
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #       restart: true
+
+volumes:
+  pgdata:

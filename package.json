@@ -6,7 +6,10 @@
   "scripts": {
     "prepare": "husky",
     "build": "remix vite:build",
+    "db:up": "docker compose -f docker-compose-db.yml up",
+    "predev": "pnpm run db:up -d",
     "dev": "remix vite:dev",
+    "postdev": "docker compose -f docker-compose-db.yml down",
     "lint": "eslint --ignore-path .gitignore --cache --cache-location ./node_modules/.cache/eslint .",
     "lint:css": "stylelint --report-needless-disables --report-invalid-scope-disables --report-descriptionless-disables",
     "start": "NODE_OPTIONS='--import ./instrumentation.server.mjs' remix-serve ./build/server/index.js",
