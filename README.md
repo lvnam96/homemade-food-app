@@ -3,15 +3,11 @@
 
 ## Database schema
 
-<iframe width="1024" height="768" src='https://dbdiagram.io/e/67400013e9daa85aca53cffc/6740396ae9daa85aca58fa1e'> </iframe>
-
-_See it as [structured documentation](https://dbdocs.io/lvnam96/Homemade-food-app)._
+See it as [structured documentation](https://dbdocs.io/lvnam96/Homemade-food-app) (PW: 123345) or [diagram](https://dbdiagram.io/e/67400013e9daa85aca53cffc/6740396ae9daa85aca58fa1e).
 
 ## Status page
 
-<iframe src="https://status.lvnam.dev/badge?theme=dark" width="250" height="30" frameborder="0" scrolling="no"></iframe>
-
-> All services's status is tracked at https://status.lvnam.dev
+All services are tracked at https://status.lvnam.dev
 
 ## Development
 
