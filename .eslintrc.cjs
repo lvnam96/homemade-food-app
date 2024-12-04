@@ -134,7 +134,7 @@ module.exports = {
 
     // Node
     {
-      files: ['.eslintrc.cjs', '*.config.js', '*.config.ts'],
+      files: ['.eslintrc.cjs', '*.config.js', '*.config.ts', '*.server.*'],
       env: {
         node: true,
       },
