@@ -4,6 +4,8 @@
   "sideEffects": false,
   "type": "module",
   "scripts": {
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "tsx ./app/.server/db/migrate.ts",
     "db:sample": "tsx ./app/.server/db/sample.ts",
     "prepare": "husky",
     "build": "remix vite:build",

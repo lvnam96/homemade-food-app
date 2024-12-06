@@ -5,6 +5,7 @@ config({ path: '.env' });
 
 export default defineConfig({
   out: './drizzle',
+  schema: './app/.server/db/schema',
   dialect: 'postgresql',
   verbose: true,
   dbCredentials: {
