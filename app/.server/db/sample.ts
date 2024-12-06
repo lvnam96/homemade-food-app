@@ -1,4 +1,4 @@
-import { db } from './instance';
+import { db } from './index';
 
 async function main() {
   try {
