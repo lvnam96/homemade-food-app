@@ -8,9 +8,7 @@ import { drizzle as neonDrizzle } from 'drizzle-orm/neon-http';
 import { drizzle as pgDrizzle } from 'drizzle-orm/node-postgres';
 // import { Pool as PgPool } from 'pg';
 
-import { config } from 'dotenv';
-
-config({ path: '.env' });
+import '~/services/import-env.server';
 
 const connectionString = process.env.DATABASE_URL!;
 
