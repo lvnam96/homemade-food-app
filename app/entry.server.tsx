@@ -12,6 +12,13 @@ import { RemixServer } from '@remix-run/react';
 import { isbot } from 'isbot';
 import { renderToPipeableStream } from 'react-dom/server';
 import * as Sentry from '@sentry/remix';
+import '~/services/import-env.server';
+
+Sentry.init({
+  dsn: process.env.PUBLIC_SENTRY_DSN,
+  tracesSampleRate: 1, // process.env.NODE_ENV === 'development' ? 0 : 1,
+  autoInstrumentRemix: true,
+});
 
 export const handleError = Sentry.wrapHandleErrorWithSentry((error, { request }) => {
   console.group(`Server entry error at "${(request as LoaderFunctionArgs['request']).url}":`);
