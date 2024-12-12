@@ -4,17 +4,17 @@
  * For more information, see https://remix.run/file-conventions/entry.client
  */
 
-import * as Sentry from '@sentry/remix';
+import { browserTracingIntegration, init } from '@sentry/remix';
 import { RemixBrowser, useLocation, useMatches } from '@remix-run/react';
 import { startTransition, StrictMode, useEffect } from 'react';
 import { hydrateRoot } from 'react-dom/client';
 
-Sentry.init({
+init({
   dsn: import.meta.env.PUBLIC_SENTRY_DSN,
   tracesSampleRate: import.meta.env.DEV ? 0 : 1,
 
   integrations: [
-    Sentry.browserTracingIntegration({
+    browserTracingIntegration({
       useEffect,
       useLocation,
       useMatches,
