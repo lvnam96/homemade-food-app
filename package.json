@@ -4,6 +4,7 @@
   "sideEffects": false,
   "type": "module",
   "scripts": {
+    "db:pull-schema": "drizzle-kit pull",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx ./app/.server/db/migrate.ts",
     "db:sample": "tsx ./app/.server/db/sample.ts",
