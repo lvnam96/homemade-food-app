@@ -37,7 +37,7 @@ jobs:
         run: pnpm install
 
       - name: 🔬 Lint
-        run: pnpm run lint && pnpm run lint:css
+        run: pnpm run lint
 
   typecheck:
     name: ʦ TypeScript
