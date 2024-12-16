@@ -24,6 +24,7 @@ export default defineConfig({
     sentryVitePlugin({
       org: 'gary-le',
       project: 'homemade-food-app',
+      telemetry: false,
     }),
   ],
   build: {
