@@ -13,7 +13,13 @@ import '~/services/import-env.server';
 const connectionString = process.env.DATABASE_URL!;
 
 export const db =
-  process.env.NODE_ENV === 'production' ? neonDrizzle(neon(connectionString)) : pgDrizzle(connectionString);
+  process.env.NODE_ENV === 'production'
+    ? neonDrizzle(neon(connectionString), {
+        casing: 'snake_case',
+      })
+    : pgDrizzle(connectionString, {
+        casing: 'snake_case',
+      });
 
 // FIXME: this code throws error: "PgPool is not exported from `pg` package"
 // export const createDBConnectionPool = () => {
