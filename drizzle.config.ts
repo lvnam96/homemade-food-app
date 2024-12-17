@@ -1,5 +1,8 @@
 import { defineConfig } from 'drizzle-kit';
+import invariant from 'tiny-invariant';
 import '~/services/import-env.server';
+
+invariant(process.env.DATABASE_URL, 'DATABASE_URL is not set');
 
 export default defineConfig({
   out: './app/.server/db/schema',
@@ -14,7 +17,7 @@ export default defineConfig({
     },
   },
   dbCredentials: {
-    url: process.env.DATABASE_URL!,
+    url: process.env.DATABASE_URL,
   },
   schemaFilter: ['public', 'hf'],
   // extensionsFilters: ['postgis'],

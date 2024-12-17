@@ -7,10 +7,12 @@ import { neon /* , Pool as NeonPool */ } from '@neondatabase/serverless';
 import { drizzle as neonDrizzle } from 'drizzle-orm/neon-http';
 import { drizzle as pgDrizzle } from 'drizzle-orm/node-postgres';
 // import { Pool as PgPool } from 'pg';
+import invariant from 'tiny-invariant';
 
 import '~/services/import-env.server';
 
-const connectionString = process.env.DATABASE_URL!;
+invariant(process.env.DATABASE_URL, 'DATABASE_URL is not set');
+const connectionString = process.env.DATABASE_URL;
 
 export const db =
   process.env.NODE_ENV === 'production'
