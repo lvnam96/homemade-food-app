@@ -2,14 +2,16 @@ name: homemade-food-db
 
 services:
   postgres:
-    image: postgres:17-alpine3.20
+    # image: postgres:17-alpine3.20
+    build:
+      context: .
+      dockerfile: db.Dockerfile
     container_name: homemadefood-db.dev.postgres
     # command: '-d 1' # set debug-level
-    env_file: .env
     environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=samples3cr3t
-      - POSTGRES_DB=postgres
+      - POSTGRES_USER=hmfdbuser
+      - POSTGRES_PASSWORD=Td98vzeM82
+      - POSTGRES_DB=hmfdb
     ports:
       - '54320:5432'
     restart: always
@@ -27,7 +29,6 @@ services:
   # neon_proxy:
   #   image: ghcr.io/timowilhelm/local-neon-http-proxy:main
   #   container_name: homemade-food-db.dev.neon_proxy
-  #   env_file: .env
   #   ports:
   #     - '4444:4444'
   #   depends_on:

@@ -9,15 +9,14 @@
 
 ## Development
 
-For first-time database setup, there will be a bash script at `./app/.server/db/setup_db.sh` for easier setup PostgreSQL database.
+For first-time database setup, there will be some [setup SQL scripts](./app/.server/db/sql) to setup database schema and seed data. They are automatically executed when init the database container the first time (empty database). See [db.Dockerfile](./db.Dockerfile) for details.
+
+To init development server, run the following commands:
 
 ```bash
-# First-time setup
-pnpm install && chmod 700 ./app/.server/db/setup_db.sh && ./app/.server/db/setup_db.sh
-```
+# Install dependencies (if not installed yet)
+pnpm install
 
-Init dev server:
-
-```bash
+# Init dev server
 pnpm dev
 ```
