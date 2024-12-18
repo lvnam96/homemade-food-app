@@ -78,7 +78,7 @@ CREATE TABLE "hf"."merchants" (
   "id" serial PRIMARY KEY,
   "name" varchar,
   "description" text,
-  "owner_id" integer,
+  "owner_id" integer UNIQUE NOT NULL,
   "status" hf.merchant_status,
   "created_at" timestamptz NOT NULL DEFAULT (now()),
   "updated_at" timestamptz,
@@ -88,16 +88,17 @@ CREATE TABLE "hf"."merchants" (
 );
 
 CREATE TABLE "hf"."merchant_contact_info" (
-  "merchant_id" integer PRIMARY KEY,
+  "id" serial PRIMARY KEY,
+  "merchant_id" integer UNIQUE NOT NULL,
   "zalo_id" varchar UNIQUE,
   "phone_number" varchar UNIQUE NOT NULL,
   "messenger_id" varchar UNIQUE,
-  "facebook_fanpage_url" url UNIQUE
+  "facebook_fanpage_url" varchar UNIQUE
 );
 
 CREATE TABLE "hf"."merchant_addresses" (
   "id" serial PRIMARY KEY,
-  "merchant_id" integer NOT NULL,
+  "merchant_id" integer UNIQUE NOT NULL,
   "address_id" integer NOT NULL
 );
 
@@ -249,6 +250,10 @@ CREATE TABLE "email_domains" (
 CREATE INDEX ON "hf"."users" ("id");
 
 CREATE UNIQUE INDEX ON "hf"."users" ("email_domain_id", "email_local_part");
+
+CREATE INDEX ON "hf"."merchant_contact_info" ("merchant_id");
+
+CREATE INDEX ON "hf"."merchant_payment_methods" ("merchant_id");
 
 CREATE INDEX ON "hf"."products" ("id");
 
