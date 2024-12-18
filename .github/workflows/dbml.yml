@@ -1,0 +1,77 @@
+name: Deploy DB documentation
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'app/.server/db/schema/**'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'app/.server/db/schema/**'
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+    outputs:
+      sql: ${{ steps.filter.outputs.sql }}
+    steps:
+      - uses: actions/checkout@v2
+
+      # Checks to see if any files in the PR match one of the listed file types.
+      # We can check if a file with a listed file type is in the PR by doing:
+      # if: ${{ steps.filter.outputs.sql == 'true' }}
+      # This will return true if there's a sql file that was changed
+      # in the PR. If there is any, run the relevant commands. Otherwise, skip.
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            sql:
+              - 'app/.server/db/sql/**.sql'
+
+  build:
+    needs: changes
+    if: ${{ needs.changes.outputs.sql == 'true' }}
+    runs-on: ubuntu-latest
+    env:
+      DBML_FILE_PATH: app/.server/db/schema/schema.dbml
+      SQL_FILE_PATH: app/.server/db/sql/schema.sql
+    steps:
+      - uses: actions/checkout@v2
+
+      - uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+
+      - name: ⎔ Setup node
+        uses: actions/setup-node@v4
+        with:
+          cache: 'pnpm'
+          node-version: 22
+
+      - name: Install dbdocs
+        run: pnpm install -g dbdocs
+
+      - name: Install @dbml/cli
+        run: pnpm install -g @dbml/cli
+
+      - name: Generate dbml
+        # run: dbdocs db2dbml postgres ${{ secrets.DATABASE_URL }} -o $DBML_FILE_PATH
+        run: sql2dbml --postgres $SQL_FILE_PATH -o $DBML_FILE_PATH
+
+      - name: Check dbdocs available
+        run: dbdocs
+
+      - name: Validate dbml
+        run: dbdocs validate $DBML_FILE_PATH
+
+      - name: Update dbdocs project
+        env:
+          DBDOCS_TOKEN: ${{ secrets.DBDOCS_TOKEN }}
+          DBDOCS_PROJECT_NAME: Homemade food app
+        run: dbdocs build $DBML_FILE_PATH --project "$DBDOCS_PROJECT_NAME"
