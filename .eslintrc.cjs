@@ -13,7 +13,13 @@ module.exports = {
     commonjs: true,
     es6: true,
   },
-  ignorePatterns: ['!**/.server', '!**/.client', '/public/**'],
+  ignorePatterns: [
+    '!**/.server',
+    '!**/.client',
+    '/public/**',
+    'app/.server/db/schema/relations.ts',
+    'app/.server/db/schema/schema.ts',
+  ],
 
   // Base config
   extends: [
