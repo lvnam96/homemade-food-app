@@ -85,6 +85,37 @@ jobs:
   #     - name: ⚡ Run vitest
   #       run: pnpm run test -- --coverage
 
+  test:
+    name: ⚡ Run Vitest and collect results
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+
+      - name: ⎔ Setup Node
+        uses: actions/setup-node@v4
+
+      - name: 📥 Install deps
+        run: npm install
+
+      - name: ⚡ Run tests
+        run: pnpm run test:coverage --reporter=junit --outputFile=test-report.junit.xml
+
+      - name: Upload coverage results to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: Upload test results to Codecov
+        if: ${{ !cancelled() }}
+        uses: codecov/test-results-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+
   # playwright:
   #   name: 🎭 Playwright
   #   runs-on: ubuntu-22.04
