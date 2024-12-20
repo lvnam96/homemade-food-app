@@ -62,34 +62,11 @@ jobs:
       - name: 🔎 Type check
         run: pnpm run typecheck
 
-  # vitest:
-  #   name: ⚡ Vitest
-  #   runs-on: ubuntu-22.04
-  #   steps:
-  #     - name: ⬇️ Checkout repo
-  #       uses: actions/checkout@v4
-
-  #     - uses: pnpm/action-setup@v4
-  #       with:
-  #         run_install: false
-
-  #     - name: ⎔ Setup node
-  #       uses: actions/setup-node@v4
-  #       with:
-  #         cache: 'pnpm'
-  #         node-version: 22
-
-  #     - name: 📥 Install deps
-  #       run: pnpm install
-
-  #     - name: ⚡ Run vitest
-  #       run: pnpm run test -- --coverage
-
-  test:
+  unit-test:
     name: ⚡ Run Vitest and collect results
     runs-on: ubuntu-22.04
     steps:
-      - name: Checkout
+      - name: ⬇️ Checkout repo
         uses: actions/checkout@v4
 
       - uses: pnpm/action-setup@v4
@@ -106,18 +83,19 @@ jobs:
         run: pnpm install
 
       - name: ⚡ Run tests
-        run: pnpm run test:coverage --reporter=junit --outputFile=test-report.junit.xml
+        # run: pnpm run test:coverage --reporter=junit --outputFile=test-report.junit.xml
+        run: pnpm run test
 
-      - name: Upload coverage results to Codecov
-        uses: codecov/codecov-action@v5
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
+      # - name: 📊 Upload coverage results to Codecov
+      #   uses: codecov/codecov-action@v5
+      #   with:
+      #     token: ${{ secrets.CODECOV_TOKEN }}
 
-      - name: Upload test results to Codecov
-        if: ${{ !cancelled() }}
-        uses: codecov/test-results-action@v1
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
+      # - name: 📊 Upload test results to Codecov
+      #   if: ${{ !cancelled() }}
+      #   uses: codecov/test-results-action@v1
+      #   with:
+      #     token: ${{ secrets.CODECOV_TOKEN }}
 
   # playwright:
   #   name: 🎭 Playwright
@@ -179,7 +157,7 @@ jobs:
   deploy:
     name: 🚀 Deploy
     runs-on: ubuntu-22.04
-    needs: [lint, typecheck] # add `vitest, playwright` when they are ready
+    needs: [lint, typecheck, 'unit-test'] # add `playwright` when they are ready
     # only build/deploy branches on pushes
     if: ${{ github.event_name == 'push' }}
 
