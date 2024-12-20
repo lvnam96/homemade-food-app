@@ -3,7 +3,7 @@
 
 ## Useful links
 
-- [Database schema documentation](https://dbdocs.io/lvnam96/Homemade-food-app) (password if asked: 123345) or [diagram only](https://dbdiagram.io/e/67400013e9daa85aca53cffc/6740396ae9daa85aca58fa1e).
+- [Database schema documentation](https://dbdocs.io/lvnam96/Homemade-food-app) (password if asked: 123345) or [diagram only](https://dbdocs.io/embed/a7f26aa0105c8e8ad8fb07a101875556/361d2517416c4a6e85e6934448c71a1e).
 - [API documentation](http://apidoc.food.lvnam.dev)
 - [Services' status page](https://status.lvnam.dev)
 
