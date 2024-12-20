@@ -4,6 +4,7 @@ import { vitePlugin as remix } from '@remix-run/dev';
 import { defineConfig, loadEnv } from 'vite';
 import tsconfigPaths from 'vite-tsconfig-paths';
 import { codecovRemixVitePlugin } from '@codecov/remix-vite-plugin';
+import { envOnlyMacros } from 'vite-env-only';
 
 declare module '@remix-run/node' {
   interface Future {
@@ -29,6 +30,7 @@ export default defineConfig(({ mode }) => {
       },
     },
     plugins: [
+      envOnlyMacros(),
       isTest
         ? null
         : remix({
