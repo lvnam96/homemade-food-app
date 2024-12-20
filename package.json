@@ -19,6 +19,9 @@
     "lint:css": "stylelint --report-needless-disables --report-invalid-scope-disables --report-descriptionless-disables",
     "start": "remix-serve ./build/server/index.js",
     "format": "prettier --write .",
+    "test": "vitest run",
+    "test:watch": "vitest watch",
+    "test:coverage": "vitest run --coverage",
     "typecheck": "tsc"
   },
   "lint-staged": {
