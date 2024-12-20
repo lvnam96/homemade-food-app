@@ -10,7 +10,6 @@
     "esbenp.prettier-vscode",
     "stylelint.vscode-stylelint",
     "mikestead.dotenv",
-    "renesaarsoo.sql-formatter-vsc",
     "mtxr.sqltools",
     "mtxr.sqltools-driver-pg"
   ]
