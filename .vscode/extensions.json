@@ -1,0 +1,17 @@
+{
+  "recommendations": [
+    "redhat.vscode-yaml",
+    "gruntfuggly.todo-tree",
+    "usernamehw.errorlens",
+    "yoavbls.pretty-ts-errors",
+    "ms-azuretools.vscode-docker",
+    "bradlc.vscode-tailwindcss",
+    "dbaeumer.vscode-eslint",
+    "esbenp.prettier-vscode",
+    "stylelint.vscode-stylelint",
+    "mikestead.dotenv",
+    "renesaarsoo.sql-formatter-vsc",
+    "mtxr.sqltools",
+    "mtxr.sqltools-driver-pg"
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "yaml.schemas": {
+    "https://json.schemastore.org/github-workflow.json": "file:///home/n0ne/PROJECTS/homemade-food-app/.github/workflows/*.yml",
+    "https://json.schemastore.org/prettierrc.json": "file:///home/n0ne/PROJECTS/homemade-food-app/.prettierrc"
+  },
+  "sqltools.connections": [
+    {
+      "previewLimit": 50,
+      "server": "localhost",
+      "driver": "PostgreSQL",
+      "name": "local DB",
+      "connectString": "postgresql://hmfdbuser:Td98vzeM82@localhost:54320/hmfdb"
+    }
+  ],
+  "SQL-Formatter-VSCode.dialect": "postgresql"
+}
