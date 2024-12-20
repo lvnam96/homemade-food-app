@@ -5,8 +5,8 @@ import '~/services/import-env.server';
 invariant(process.env.DATABASE_URL, 'DATABASE_URL is not set');
 
 export default defineConfig({
-  out: './app/.server/db/schema',
-  schema: './app/.server/db/schema/index.ts',
+  out: './app/.server/db/migrations',
+  schema: './app/.server/db/schema.ts',
   dialect: 'postgresql',
   breakpoints: false,
   verbose: true,

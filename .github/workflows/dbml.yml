@@ -39,7 +39,7 @@ jobs:
     if: ${{ needs.changes.outputs.sql == 'true' }}
     runs-on: ubuntu-latest
     env:
-      DBML_FILE_PATH: app/.server/db/schema/schema.dbml
+      DBML_FILE_PATH: app/.server/db/schema.dbml
       SQL_FILE_PATH: app/.server/db/sql/schema.sql
     steps:
       - uses: actions/checkout@v2
