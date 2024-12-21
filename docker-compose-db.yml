@@ -1,17 +1,16 @@
-name: homemade-food-db
+name: homemadefood-db
 
 services:
   postgres:
-    # image: postgres:17-alpine3.20
     build:
       context: .
       dockerfile: db.Dockerfile
     container_name: homemadefood-db.dev.postgres
     # command: '-d 1' # set debug-level
     environment:
-      - POSTGRES_USER=hmfdbuser
-      - POSTGRES_PASSWORD=Td98vzeM82
-      - POSTGRES_DB=hmfdb
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
     ports:
       - '54320:5432'
     restart: always
@@ -26,9 +25,12 @@ services:
   # Refs:
   # https://github.com/timowilhelm/local-neon-http-proxy
   # https://neon.tech/guides/local-development-with-neon
+  # NOTE: this proxy does NOT work at the moment due to `drizzle-orm/neon-http` always tries to connect to internet (Neon DB server) no matter which DB URL is used (`drizzle-orm/neon-http` evens throw an error if DB URL's host is localhost).
   # neon_proxy:
   #   image: ghcr.io/timowilhelm/local-neon-http-proxy:main
-  #   container_name: homemade-food-db.dev.neon_proxy
+  #   container_name: homemadefood-db.dev.neon_proxy
+  #   environment:
+  #     - PG_CONNECTION_STRING=${PG_CONNECTION_STRING}
   #   ports:
   #     - '4444:4444'
   #   depends_on:

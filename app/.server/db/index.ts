@@ -14,6 +14,7 @@ import '~/services/import-env.server';
 invariant(process.env.DATABASE_URL, 'DATABASE_URL is not set');
 const connectionString = process.env.DATABASE_URL;
 
+// NOTE: using 2 drizzle drivers/adapters on prod/dev envs is required due to `neonDrizzle` does not work with `timowilhelm/local-neon-http-proxy` which we tried to set up in `docker-compose-db.yml` (it still tries to connect DB from Neon server when we use DB connection string from Neon)
 export const db =
   process.env.NODE_ENV === 'production'
     ? neonDrizzle(neon(connectionString), {
