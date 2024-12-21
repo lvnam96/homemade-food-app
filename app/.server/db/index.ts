@@ -3,10 +3,10 @@
 // https://github.com/TimoWilhelm/local-neon-http-proxy
 // https://github.com/TimoWilhelm/local-neon-http-proxy/issues/3
 
-import { neon /* , Pool as NeonPool */ } from '@neondatabase/serverless';
+import { neon, Pool as NeonPool } from '@neondatabase/serverless';
 import { drizzle as neonDrizzle } from 'drizzle-orm/neon-http';
 import { drizzle as pgDrizzle } from 'drizzle-orm/node-postgres';
-// import { Pool as PgPool } from 'pg';
+import * as pg from 'pg';
 import invariant from 'tiny-invariant';
 
 import '~/services/import-env.server';
@@ -24,11 +24,11 @@ export const db =
         casing: 'snake_case',
       });
 
-// FIXME: this code throws error: "PgPool is not exported from `pg` package"
-// export const createDBConnectionPool = () => {
-//   if (process.env.NODE_ENV === 'production') {
-//     return new NeonPool({ connectionString });
-//   } else {
-//     return new PgPool({ connectionString });
-//   }
-// };
+const PgPool = pg.Pool; // NOTE: this workaround solves "PgPool is not exported from `pg` package" error (ref: https://stackoverflow.com/questions/55377103/can-i-import-the-node-postgres-module-pg-or-is-it-commonjs-only)
+export const createDBConnectionPool = () => {
+  if (process.env.NODE_ENV === 'production') {
+    return new NeonPool({ connectionString });
+  } else {
+    return new PgPool({ connectionString });
+  }
+};
