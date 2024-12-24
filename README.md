@@ -7,9 +7,15 @@
 - [API documentation](http://apidoc.food.lvnam.dev)
 - [Services' status page](https://status.lvnam.dev)
 
+## Platforms
+
+- [Docker](https://docs.docker.com/get-docker/)
+- [Docker Compose](https://docs.docker.com/compose/install/)
+- [pnpm v9](https://pnpm.io/)
+
 ## Development
 
-For first-time database setup, there will be some [setup SQL scripts](./app/.server/db/sql) to setup database schema and seed data. They are automatically executed when init the database container the first time (empty database). See [db.Dockerfile](./db.Dockerfile) for details.
+For first-time database setup, there will be some [setup SQL scripts](./app/.server/db/sql) to setup database schema and seed data. They are automatically executed if the database is empty. See [remix-dev.Dockerfile](./remix-dev.Dockerfile) for more details.
 
 To init development server, run the following commands:
 
@@ -17,6 +23,12 @@ To init development server, run the following commands:
 # Install dependencies (if not installed yet)
 pnpm install
 
+# Rename `.env.example` to `.env`
+cp .env.example .env
+
 # Init dev server
-pnpm dev
+pnpm dev # Ctrl+C to exit
+
+# Or:
+pnpm dev:up # this command uses "detach" mode; run `pnpm dev:down` to stop
 ```

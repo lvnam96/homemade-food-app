@@ -1,0 +1,86 @@
+name: homemadefood-db
+
+services:
+  postgres:
+    # Cannot use `cgr.dev/chainguard/postgres:latest` as it does not support initialization scripts in `/docker-entrypoint-initdb.d` directory
+    image: postgres:17-alpine3.20
+    container_name: homemadefood-db.dev.postgres
+    # command: '-d 1' # set debug-level
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+    ports:
+      - '54320:5432'
+    restart: always
+    healthcheck:
+      # Github issue with posgres health check command `pg_isready`: https://github.com/peter-evans/docker-compose-healthcheck/issues/16#issuecomment-1420377736
+      test: ['CMD-SHELL', 'psql -h localhost -U $POSTGRES_USER -d $POSTGRES_DB -c "select 1"']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      # Ref: https://hub.docker.com/_/postgres in section "Initialization scripts"
+      # Note: files are renamed to ensure they are executed in the correct order
+      - ./app/.server/db/sql/schema.sql:/docker-entrypoint-initdb.d/1.sql
+      - ./app/.server/db/sql/vietnamese-admin-units-data.sql:/docker-entrypoint-initdb.d/2.sql
+      - pgdata:/var/lib/postgresql/data
+    deploy:
+      resources:
+        # This mimics the available resources of free tier on Neon DB service
+        limits:
+          cpus: '2'
+          memory: 8G
+        reservations:
+          cpus: '0.25'
+          memory: 1G
+
+  # Refs:
+  # https://github.com/timowilhelm/local-neon-http-proxy
+  # https://neon.tech/guides/local-development-with-neon
+  # NOTE: this proxy does NOT work at the moment due to `drizzle-orm/neon-http` always tries to connect to internet (Neon DB server) no matter which DB URL is used (`drizzle-orm/neon-http` even throws an error if DB URL's host is localhost).
+  # neon_proxy:
+  #   image: ghcr.io/timowilhelm/local-neon-http-proxy:main
+  #   container_name: homemadefood-db.dev.neon_proxy
+  #   environment:
+  #     - PG_CONNECTION_STRING=${PG_CONNECTION_STRING}
+  #   ports:
+  #     - '4444:4444'
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #       restart: true
+
+  remix:
+    build:
+      context: .
+      dockerfile: ./remix-dev.Dockerfile
+    container_name: homemadefood-db.dev.remix
+    volumes:
+      # Bind everything (except `node_modules`) from host to workdir (see dockerfile) in container
+      - type: bind
+        source: ./
+        target: /app/
+      - type: volume
+        target: /app/node_modules
+    develop:
+      watch:
+        # Auto rebuild image so we don't have to install dependencies twice - inside container and on host (for code editor)
+        - path: pnpm-lock.yaml
+          # No `target: ...` because we want to rebuild image only since syncing this file is already handled by bind mount in `volumes`
+          action: rebuild
+    network_mode: 'host' # allow Vite to change port automatically if its default port (5173) has been used already
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_started
+  #     redis:
+  #       condition: service_started
+  # redis:
+  #   image: redis:alpine
+  #   depends_on:
+  #     postgres:
+  #       condition: service_started
+
+volumes:
+  pgdata:
