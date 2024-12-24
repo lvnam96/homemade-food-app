@@ -2,9 +2,7 @@ name: homemadefood-db
 
 services:
   postgres:
-    build:
-      context: .
-      dockerfile: db.Dockerfile
+    image: postgres:17-alpine3.20
     container_name: homemadefood-db.dev.postgres
     # command: '-d 1' # set debug-level
     environment:
@@ -21,7 +19,12 @@ services:
       timeout: 5s
       retries: 5
     volumes:
+      # Ref: https://hub.docker.com/_/postgres in section "Initialization scripts"
+      # Note: files are renamed to ensure they are executed in the correct order
+      - ./app/.server/db/sql/schema.sql:/docker-entrypoint-initdb.d/1.sql
+      - ./app/.server/db/sql/vietnamese-admin-units-data.sql:/docker-entrypoint-initdb.d/2.sql
       - pgdata:/var/lib/postgresql/data
+
   # Refs:
   # https://github.com/timowilhelm/local-neon-http-proxy
   # https://neon.tech/guides/local-development-with-neon
@@ -37,6 +40,28 @@ services:
   #     postgres:
   #       condition: service_healthy
   #       restart: true
+
+  remix:
+    build:
+      context: .
+      dockerfile: ./remix-dev.Dockerfile
+    container_name: homemadefood-db.dev.remix
+    volumes:
+      - type: bind
+        source: ./
+        target: /app/
+      - type: volume
+        target: /app/node_modules
+    ports:
+      - '3000:5173'
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_started
+  #     - redis:
+  #       condition: service_started
+  # redis:
+  #   image: redis:alpine
 
 volumes:
   pgdata:
