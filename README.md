@@ -26,9 +26,9 @@ pnpm install
 # Rename `.env.example` to `.env`
 cp .env.example .env
 
-# Init dev server
-pnpm dev # Ctrl+C to exit
+# Init services
+pnpm dev # enable Docker compose's watch mode to auto rebuild Remix image on deps change; press Ctrl+C to exit
 
-# Or:
-pnpm dev:up # this command uses "detach" mode; run `pnpm dev:down` to stop
+# Remove services' containers and volumes
+pnpm dev:down
 ```
