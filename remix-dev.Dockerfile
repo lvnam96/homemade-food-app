@@ -19,6 +19,7 @@ RUN --mount=type=cache,id=pnpm,target=/.pnpm-store \
 
 COPY . .
 
-USER node
+# Using non-root user is not necessary for development
+# USER node
 
 CMD ["pnpm", "exec", "remix", "vite:dev", "--host"]
