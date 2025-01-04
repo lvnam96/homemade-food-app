@@ -1,10 +1,10 @@
-name: homemadefood-db
+name: homemadefood-dev
 
 services:
   postgres:
     # Cannot use `cgr.dev/chainguard/postgres:latest` as it does not support initialization scripts in `/docker-entrypoint-initdb.d` directory
     image: postgres:17-alpine3.20
-    container_name: homemadefood-db.dev.postgres
+    container_name: homemadefood-dev.postgres
     # command: '-d 1' # set debug-level
     environment:
       - POSTGRES_USER=${POSTGRES_USER}
@@ -41,7 +41,7 @@ services:
   # NOTE: this proxy does NOT work at the moment due to `drizzle-orm/neon-http` always tries to connect to internet (Neon DB server) no matter which DB URL is used (`drizzle-orm/neon-http` even throws an error if DB URL's host is localhost).
   # neon_proxy:
   #   image: ghcr.io/timowilhelm/local-neon-http-proxy:main
-  #   container_name: homemadefood-db.dev.neon_proxy
+  #   container_name: homemadefood-dev.neon_proxy
   #   environment:
   #     - PG_CONNECTION_STRING=${PG_CONNECTION_STRING}
   #   ports:
@@ -55,7 +55,7 @@ services:
     build:
       context: .
       dockerfile: ./remix-dev.Dockerfile
-    container_name: homemadefood-db.dev.remix
+    container_name: homemadefood-dev.remix
     volumes:
       # Bind everything (except `node_modules`) from host to workdir (see dockerfile) in container
       - type: bind
