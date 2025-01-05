@@ -22,6 +22,7 @@ namespace NodeJS {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   interface ProcessEnv {
     readonly SESSION_COOKIE_SECRET: string;
+    readonly DB_MIGRATING: string | undefined;
   }
 }
 

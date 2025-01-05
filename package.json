@@ -6,7 +6,7 @@
   "scripts": {
     "db:pull-schema": "drizzle-kit pull",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "tsx ./app/.server/db/migrate.ts",
+    "db:migrate": "cross-env DB_MIGRATING=true tsx ./app/.server/db/migrate.ts",
     "db:sample": "tsx ./app/.server/db/sample.ts",
     "prepare": "husky",
     "build": "remix vite:build",

@@ -3,7 +3,7 @@
 // https://github.com/TimoWilhelm/local-neon-http-proxy
 // https://github.com/TimoWilhelm/local-neon-http-proxy/issues/3
 
-import { neon, neonConfig, Pool as NeonPool } from '@neondatabase/serverless';
+import { neonConfig, Pool as NeonPool } from '@neondatabase/serverless';
 import { drizzle as neonDrizzle } from 'drizzle-orm/neon-http';
 import { drizzle as pgDrizzle } from 'drizzle-orm/node-postgres';
 import * as pg from 'pg';
@@ -26,10 +26,19 @@ if (typeof EdgeRuntime !== 'string') {
 // NOTE: using 2 drizzle drivers/adapters on prod/dev envs is required due to `neonDrizzle` does not work with `timowilhelm/local-neon-http-proxy` which we tried to set up in `docker-compose.yml` (it still tries to connect DB from Neon server when we use DB connection string from Neon)
 export const db =
   process.env.NODE_ENV === 'production'
-    ? neonDrizzle(neon(connectionString), {
+    ? neonDrizzle({
+        // client: neon(connectionString),
+        connection: {
+          connectionString,
+        },
         casing: 'snake_case',
       })
-    : pgDrizzle(connectionString, {
+    : pgDrizzle({
+        // client: new pg.Client({ connectionString }),
+        connection: {
+          connectionString,
+          max: process.env.DB_MIGRATING || process.env.DB_SEEDING ? 1 : undefined,
+        },
         casing: 'snake_case',
       });
 
