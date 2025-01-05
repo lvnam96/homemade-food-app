@@ -8,9 +8,8 @@
       "previewLimit": 50,
       "server": "localhost",
       "driver": "PostgreSQL",
-      "name": "local DB",
-      "connectString": "postgresql://hmfdbuser:Td98vzeM82@localhost:54320/hmfdb"
+      "name": "localhost",
+      "connectString": "postgresql://postgres:postgres@localhost:54320/hmfdb"
     }
-  ],
-  "SQL-Formatter-VSCode.dialect": "postgresql"
+  ]
 }
