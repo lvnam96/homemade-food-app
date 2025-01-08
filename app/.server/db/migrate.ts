@@ -3,8 +3,11 @@ import { migrate as pgMigrate } from 'drizzle-orm/node-postgres/migrator';
 import { db } from './index';
 import type { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import invariant from 'tiny-invariant';
+import drizzleConfig from '../../../drizzle.config';
 
-const migrationsFolder = process.cwd() + '/app/.server/db/schema';
+invariant(drizzleConfig.out, 'Output folder must be set when running migration');
+
+const migrationsFolder = drizzleConfig.out;
 
 invariant(process.env.DB_MIGRATING === 'true', 'DB_MIGRATING must be set to true when running migration');
 
