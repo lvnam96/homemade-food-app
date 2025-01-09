@@ -21,6 +21,7 @@ interface Navigator {
 namespace NodeJS {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   interface ProcessEnv {
+    readonly JWT_SECRET: string;
     readonly SESSION_COOKIE_SECRET: string;
     readonly DB_MIGRATING: string | undefined;
   }
