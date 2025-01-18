@@ -36,6 +36,11 @@ CREATE TYPE "hf"."payment_method" AS ENUM (
   'online_banking'
 );
 
+CREATE TYPE "hf"."verification_type" AS ENUM (
+  'email',
+  'phone'
+);
+
 CREATE TABLE "hf"."roles" (
   "id" serial PRIMARY KEY,
   "name" hf.role_name UNIQUE NOT NULL,
@@ -44,18 +49,51 @@ CREATE TABLE "hf"."roles" (
 
 CREATE TABLE "hf"."users" (
   "id" serial PRIMARY KEY,
-  "username" varchar NOT NULL,
+  "display_name" varchar NOT NULL,
   "created_at" timestamptz NOT NULL DEFAULT (now()),
-  "phone_number" varchar,
-  "email_domain_id" integer NOT NULL,
-  "email_local_part" varchar(50) NOT NULL
+  "updated_at" timestamptz,
+  "deleted_at" timestamptz,
+  "merchant_id" integer UNIQUE,
+  "phone_number" varchar
+);
+
+CREATE TABLE "hf"."user_credentials" (
+  "user_id" integer NOT NULL,
+  "created_at" timestamptz NOT NULL DEFAULT (now()),
+  "updated_at" timestamptz,
+  "deleted_at" timestamptz,
+  "email" varchar UNIQUE NOT NULL,
+  "password" varchar NOT NULL,
+  "salt" varchar NOT NULL,
+  "last_login_at" timestamptz NOT NULL DEFAULT (now())
 );
 
 CREATE TABLE "hf"."user_addresses" (
-  "id" serial PRIMARY KEY,
   "user_id" integer NOT NULL,
   "is_work_place" bool,
-  "address_id" integer NOT NULL
+  "address_id" integer NOT NULL,
+  PRIMARY KEY ("user_id", "address_id")
+);
+
+CREATE TABLE "hf"."auth_sessions" (
+  "id" serial PRIMARY KEY,
+  "expired_at" timestamptz NOT NULL,
+  "created_at" timestamptz NOT NULL DEFAULT (now()),
+  "updated_at" timestamptz,
+  "user_id" integer
+);
+
+CREATE TABLE "hf"."auth_verifications" (
+  "id" text PRIMARY KEY NOT NULL,
+  "created_at" timestamptz NOT NULL DEFAULT (now()),
+  "expired_at" timestamptz,
+  "type" hf.verification_type NOT NULL,
+  "target" text NOT NULL,
+  "secret" text NOT NULL,
+  "algorithm" text NOT NULL,
+  "digits" integer NOT NULL,
+  "period" integer NOT NULL,
+  "char_set" text NOT NULL
 );
 
 CREATE TABLE "hf"."addresses" (
@@ -79,12 +117,13 @@ CREATE TABLE "hf"."merchants" (
   "name" varchar,
   "description" text,
   "owner_id" integer UNIQUE NOT NULL,
-  "status" hf.merchant_status,
+  "status" hf.merchant_status NOT NULL,
   "created_at" timestamptz NOT NULL DEFAULT (now()),
   "updated_at" timestamptz,
   "deleted_at" timestamptz,
   "opening_time_window" json,
-  "offline_time_window" json
+  "offline_time_window" json,
+  "address_id" integer NOT NULL
 );
 
 CREATE TABLE "hf"."merchant_contact_info" (
@@ -94,12 +133,6 @@ CREATE TABLE "hf"."merchant_contact_info" (
   "phone_number" varchar UNIQUE NOT NULL,
   "messenger_id" varchar UNIQUE,
   "facebook_fanpage_url" varchar UNIQUE
-);
-
-CREATE TABLE "hf"."merchant_addresses" (
-  "id" serial PRIMARY KEY,
-  "merchant_id" integer UNIQUE NOT NULL,
-  "address_id" integer NOT NULL
 );
 
 CREATE TABLE "hf"."merchant_payment_methods" (
@@ -128,14 +161,13 @@ CREATE TABLE "hf"."products" (
   "discount_id" integer,
   "disabled_at" timestamptz,
   "created_at" timestamptz NOT NULL DEFAULT (now()),
-  "category_id" integer,
   "quantity" smallint NOT NULL DEFAULT 0
 );
 
 CREATE TABLE "hf"."product_media" (
   "product_id" integer NOT NULL,
   "media_url" varchar NOT NULL,
-  "type" hf.media_type
+  "type" hf.media_type NOT NULL
 );
 
 CREATE TABLE "hf"."follows" (
@@ -162,28 +194,35 @@ CREATE TABLE "hf"."product_categories" (
   "parent_id" integer UNIQUE
 );
 
+CREATE TABLE "hf"."products_to_categories" (
+  "product_id" integer NOT NULL,
+  "category_id" integer NOT NULL,
+  PRIMARY KEY ("category_id", "product_id")
+);
+
 CREATE TABLE "hf"."orders" (
   "id" bigserial PRIMARY KEY,
-  "item_ids" json,
   "user_id" integer NOT NULL,
   "merchant_id" integer NOT NULL,
   "created_at" timestamptz NOT NULL DEFAULT (now()),
   "delivered_at" timestamptz,
   "done_at" timestamptz,
   "last_updated_at" timestamptz,
-  "payment_status" hf.payment_status,
-  "payment_method" hf.payment_method,
-  "shipping_address_id" integer NOT NULL
+  "payment_status" hf.payment_status NOT NULL,
+  "payment_method" hf.payment_method NOT NULL,
+  "shipping_address_id" integer NOT NULL,
+  "discount_id" integer
 );
 
-CREATE TABLE "hf"."order_products" (
+CREATE TABLE "hf"."order_items" (
+  "id" serial PRIMARY KEY,
   "order_id" bigint NOT NULL,
   "product_id" integer NOT NULL,
   "quantity" smallint NOT NULL,
   "note" text,
   "original_price" integer NOT NULL,
   "sold_price" integer NOT NULL,
-  PRIMARY KEY ("order_id", "product_id")
+  "discount_amount" decimal
 );
 
 CREATE TABLE "administrative_regions" (
@@ -242,14 +281,21 @@ CREATE TABLE "wards" (
   PRIMARY KEY ("code")
 );
 
-CREATE TABLE "email_domains" (
-  "id" serial PRIMARY KEY,
-  "domain_name" varchar UNIQUE NOT NULL
-);
-
 CREATE INDEX ON "hf"."users" ("id");
 
-CREATE UNIQUE INDEX ON "hf"."users" ("email_domain_id", "email_local_part");
+CREATE INDEX ON "hf"."users" ("merchant_id");
+
+CREATE INDEX ON "hf"."user_credentials" ("email");
+
+CREATE INDEX ON "hf"."user_credentials" ("user_id");
+
+CREATE INDEX ON "hf"."auth_sessions" ("user_id");
+
+CREATE UNIQUE INDEX ON "hf"."auth_verifications" ("target", "type");
+
+CREATE INDEX ON "hf"."merchants" ("name");
+
+CREATE INDEX ON "hf"."merchants" ("owner_id");
 
 CREATE INDEX ON "hf"."merchant_contact_info" ("merchant_id");
 
@@ -258,8 +304,6 @@ CREATE INDEX ON "hf"."merchant_payment_methods" ("merchant_id");
 CREATE INDEX ON "hf"."products" ("id");
 
 CREATE INDEX ON "hf"."products" ("merchant_id");
-
-CREATE INDEX ON "hf"."products" ("category_id");
 
 CREATE UNIQUE INDEX ON "hf"."follows" ("following_user_id", "followed_merchant_id");
 
@@ -283,6 +327,10 @@ CREATE INDEX ON "hf"."orders" ("merchant_id");
 
 CREATE INDEX ON "hf"."orders" ("payment_status");
 
+CREATE INDEX ON "hf"."order_items" ("order_id");
+
+CREATE INDEX ON "hf"."order_items" ("product_id");
+
 CREATE INDEX "idx_provinces_region" ON "provinces" ("administrative_region_id");
 
 CREATE INDEX "idx_provinces_unit" ON "provinces" ("administrative_unit_id");
@@ -295,7 +343,21 @@ CREATE INDEX "idx_wards_district" ON "wards" ("district_code");
 
 CREATE INDEX "idx_wards_unit" ON "wards" ("administrative_unit_id");
 
-COMMENT ON COLUMN "hf"."user_addresses"."is_work_place" IS 'false for others';
+COMMENT ON COLUMN "hf"."auth_verifications"."expired_at" IS 'When it''s safe to delete this verification';
+
+COMMENT ON COLUMN "hf"."auth_verifications"."type" IS 'The type of verification';
+
+COMMENT ON COLUMN "hf"."auth_verifications"."target" IS 'The thing we''re trying to verify, e.g. a user''s email or phone number';
+
+COMMENT ON COLUMN "hf"."auth_verifications"."secret" IS 'The secret key used to generate the otp';
+
+COMMENT ON COLUMN "hf"."auth_verifications"."algorithm" IS 'The algorithm used to generate the otp';
+
+COMMENT ON COLUMN "hf"."auth_verifications"."digits" IS 'The number of digits in the otp';
+
+COMMENT ON COLUMN "hf"."auth_verifications"."period" IS 'The number of seconds the OTP is valid for';
+
+COMMENT ON COLUMN "hf"."auth_verifications"."char_set" IS 'The valid characters for the OTP';
 
 COMMENT ON COLUMN "hf"."addresses"."coordinates" IS 'unused yet due to we don''t plan to become an F&B delivery service, integrated with Gmap APIs later';
 
@@ -309,9 +371,19 @@ COMMENT ON COLUMN "hf"."merchants"."offline_time_window" IS 'format: [<offline s
 
 COMMENT ON COLUMN "hf"."merchant_posts"."content" IS 'Content of the post';
 
-COMMENT ON COLUMN "hf"."orders"."item_ids" IS 'TBD?????????????????';
+COMMENT ON COLUMN "hf"."order_items"."discount_amount" IS 'amount of money discounted from original calculated from hf.discounts.discount_percent';
 
-COMMENT ON COLUMN "email_domains"."domain_name" IS 'gmail.com,duck.com,...';
+ALTER TABLE "hf"."user_credentials" ADD FOREIGN KEY ("user_id") REFERENCES "hf"."users" ("id") ON DELETE CASCADE;
+
+ALTER TABLE "hf"."auth_sessions" ADD FOREIGN KEY ("user_id") REFERENCES "hf"."users" ("id") ON DELETE CASCADE;
+
+ALTER TABLE "hf"."merchants" ADD FOREIGN KEY ("owner_id") REFERENCES "hf"."users" ("id") ON DELETE RESTRICT;
+
+ALTER TABLE "hf"."products_to_categories" ADD FOREIGN KEY ("product_id") REFERENCES "hf"."products" ("id") ON DELETE CASCADE;
+
+ALTER TABLE "hf"."products_to_categories" ADD FOREIGN KEY ("category_id") REFERENCES "hf"."product_categories" ("id") ON DELETE CASCADE;
+
+ALTER TABLE "hf"."orders" ADD FOREIGN KEY ("discount_id") REFERENCES "hf"."discounts" ("id") ON DELETE RESTRICT;
 
 ALTER TABLE "provinces" ADD CONSTRAINT "provinces_administrative_region_id_fkey" FOREIGN KEY ("administrative_region_id") REFERENCES "administrative_regions" ("id");
 
@@ -325,56 +397,48 @@ ALTER TABLE "wards" ADD CONSTRAINT "wards_administrative_unit_id_fkey" FOREIGN K
 
 ALTER TABLE "wards" ADD CONSTRAINT "wards_district_code_fkey" FOREIGN KEY ("district_code") REFERENCES "districts" ("code");
 
-ALTER TABLE "hf"."roles" ADD FOREIGN KEY ("merchant_id") REFERENCES "hf"."merchants" ("id");
+ALTER TABLE "hf"."roles" ADD FOREIGN KEY ("merchant_id") REFERENCES "hf"."merchants" ("id") ON DELETE CASCADE;
 
-ALTER TABLE "hf"."users" ADD FOREIGN KEY ("email_domain_id") REFERENCES "email_domains" ("id");
+ALTER TABLE "hf"."user_addresses" ADD FOREIGN KEY ("user_id") REFERENCES "hf"."users" ("id") ON DELETE CASCADE;
 
-ALTER TABLE "hf"."user_addresses" ADD FOREIGN KEY ("user_id") REFERENCES "hf"."users" ("id");
+ALTER TABLE "hf"."user_addresses" ADD FOREIGN KEY ("address_id") REFERENCES "hf"."addresses" ("id") ON DELETE RESTRICT;
 
-ALTER TABLE "hf"."user_addresses" ADD FOREIGN KEY ("address_id") REFERENCES "hf"."addresses" ("id");
+ALTER TABLE "hf"."addresses" ADD FOREIGN KEY ("district_id") REFERENCES "districts" ("code") ON DELETE RESTRICT;
 
-ALTER TABLE "hf"."addresses" ADD FOREIGN KEY ("district_id") REFERENCES "districts" ("code");
+ALTER TABLE "hf"."addresses" ADD FOREIGN KEY ("province_id") REFERENCES "provinces" ("code") ON DELETE RESTRICT;
 
-ALTER TABLE "hf"."addresses" ADD FOREIGN KEY ("province_id") REFERENCES "provinces" ("code");
+ALTER TABLE "hf"."user_roles" ADD FOREIGN KEY ("user_id") REFERENCES "hf"."users" ("id") ON DELETE CASCADE;
 
-ALTER TABLE "hf"."user_roles" ADD FOREIGN KEY ("user_id") REFERENCES "hf"."users" ("id");
+ALTER TABLE "hf"."user_roles" ADD FOREIGN KEY ("role_id") REFERENCES "hf"."roles" ("id") ON DELETE CASCADE;
 
-ALTER TABLE "hf"."user_roles" ADD FOREIGN KEY ("role_id") REFERENCES "hf"."roles" ("id");
+ALTER TABLE "hf"."merchants" ADD FOREIGN KEY ("id") REFERENCES "hf"."merchant_contact_info" ("merchant_id") ON DELETE CASCADE;
 
-ALTER TABLE "hf"."users" ADD FOREIGN KEY ("id") REFERENCES "hf"."merchants" ("owner_id");
+ALTER TABLE "hf"."merchants" ADD FOREIGN KEY ("address_id") REFERENCES "hf"."addresses" ("id") ON DELETE CASCADE;
 
-ALTER TABLE "hf"."merchants" ADD FOREIGN KEY ("id") REFERENCES "hf"."merchant_contact_info" ("merchant_id");
+ALTER TABLE "hf"."merchant_payment_methods" ADD FOREIGN KEY ("merchant_id") REFERENCES "hf"."merchants" ("id") ON DELETE CASCADE;
 
-ALTER TABLE "hf"."merchants" ADD FOREIGN KEY ("id") REFERENCES "hf"."merchant_addresses" ("merchant_id");
+ALTER TABLE "hf"."products" ADD FOREIGN KEY ("merchant_id") REFERENCES "hf"."merchants" ("id") ON DELETE CASCADE;
 
-ALTER TABLE "hf"."merchant_addresses" ADD FOREIGN KEY ("address_id") REFERENCES "hf"."addresses" ("id");
+ALTER TABLE "hf"."products" ADD FOREIGN KEY ("discount_id") REFERENCES "hf"."discounts" ("id") ON DELETE RESTRICT;
 
-ALTER TABLE "hf"."merchant_payment_methods" ADD FOREIGN KEY ("merchant_id") REFERENCES "hf"."merchants" ("id");
+ALTER TABLE "hf"."product_media" ADD FOREIGN KEY ("product_id") REFERENCES "hf"."products" ("id") ON DELETE CASCADE;
 
-ALTER TABLE "hf"."products" ADD FOREIGN KEY ("merchant_id") REFERENCES "hf"."merchants" ("id");
+ALTER TABLE "hf"."follows" ADD FOREIGN KEY ("following_user_id") REFERENCES "hf"."users" ("id") ON DELETE CASCADE;
 
-ALTER TABLE "hf"."products" ADD FOREIGN KEY ("category_id") REFERENCES "hf"."product_categories" ("id");
+ALTER TABLE "hf"."follows" ADD FOREIGN KEY ("followed_merchant_id") REFERENCES "hf"."merchants" ("id") ON DELETE CASCADE;
 
-ALTER TABLE "hf"."products" ADD FOREIGN KEY ("discount_id") REFERENCES "hf"."discounts" ("id");
+ALTER TABLE "hf"."merchant_posts" ADD FOREIGN KEY ("merchant_id") REFERENCES "hf"."merchants" ("id") ON DELETE CASCADE;
 
-ALTER TABLE "hf"."product_media" ADD FOREIGN KEY ("product_id") REFERENCES "hf"."products" ("id");
+ALTER TABLE "hf"."product_categories" ADD FOREIGN KEY ("merchant_id") REFERENCES "hf"."merchants" ("id") ON DELETE CASCADE;
 
-ALTER TABLE "hf"."follows" ADD FOREIGN KEY ("following_user_id") REFERENCES "hf"."users" ("id");
+ALTER TABLE "hf"."product_categories" ADD FOREIGN KEY ("parent_id") REFERENCES "hf"."product_categories" ("id") ON DELETE RESTRICT;
 
-ALTER TABLE "hf"."follows" ADD FOREIGN KEY ("followed_merchant_id") REFERENCES "hf"."merchants" ("id");
+ALTER TABLE "hf"."orders" ADD FOREIGN KEY ("user_id") REFERENCES "hf"."users" ("id") ON DELETE CASCADE;
 
-ALTER TABLE "hf"."merchant_posts" ADD FOREIGN KEY ("merchant_id") REFERENCES "hf"."merchants" ("id");
+ALTER TABLE "hf"."orders" ADD FOREIGN KEY ("merchant_id") REFERENCES "hf"."merchants" ("id") ON DELETE CASCADE;
 
-ALTER TABLE "hf"."product_categories" ADD FOREIGN KEY ("merchant_id") REFERENCES "hf"."merchants" ("id");
+ALTER TABLE "hf"."orders" ADD FOREIGN KEY ("shipping_address_id") REFERENCES "hf"."addresses" ("id") ON DELETE RESTRICT;
 
-ALTER TABLE "hf"."product_categories" ADD FOREIGN KEY ("parent_id") REFERENCES "hf"."product_categories" ("id");
+ALTER TABLE "hf"."order_items" ADD FOREIGN KEY ("order_id") REFERENCES "hf"."orders" ("id") ON DELETE CASCADE;
 
-ALTER TABLE "hf"."orders" ADD FOREIGN KEY ("user_id") REFERENCES "hf"."users" ("id");
-
-ALTER TABLE "hf"."orders" ADD FOREIGN KEY ("merchant_id") REFERENCES "hf"."merchants" ("id");
-
-ALTER TABLE "hf"."orders" ADD FOREIGN KEY ("shipping_address_id") REFERENCES "hf"."user_addresses" ("id");
-
-ALTER TABLE "hf"."order_products" ADD FOREIGN KEY ("order_id") REFERENCES "hf"."orders" ("id");
-
-ALTER TABLE "hf"."order_products" ADD FOREIGN KEY ("product_id") REFERENCES "hf"."products" ("id");
+ALTER TABLE "hf"."order_items" ADD FOREIGN KEY ("product_id") REFERENCES "hf"."products" ("id") ON DELETE CASCADE;
