@@ -1,0 +1,86 @@
+# NOTE: When testing this workflow with github extension `act`, see: https://github.com/nektos/act/issues/1929#issuecomment-2561989254
+name: Backup database
+
+on:
+  schedule:
+    # Runs at midnight
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+jobs:
+  db-backup:
+    runs-on: ubuntu-22.04
+    permissions:
+      id-token: write
+    env:
+      FILE_PREFIX: 'hmfdb'
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      HEARTBEAT_URL: ${{ secrets.BETTERSTACK_DB_BACKUP_HEARTBEAT_URL }}
+      PG_VERSION: '17'
+    outputs:
+      artifact-id: ${{ steps.artifact-upload-step.outputs.artifact-id }}
+      artifact-url: ${{ steps.artifact-upload-step.outputs.artifact-url }}
+    steps:
+      - name: Install Act dependencies
+        if: ${{ env.ACT }}
+        run: |
+          apt update && apt install -y gnupg
+
+      - name: Install wget, sudo
+        run: |
+          apt install -y wget sudo
+
+      - name: Install PostgreSQL
+        run: |
+          sudo apt install -y postgresql-common
+          yes '' | sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh
+          sudo apt install -y postgresql-client-${{ env.PG_VERSION }}
+
+      - name: Run pg_dump
+        run: |
+          FILENAME="${{ env.FILE_PREFIX }}-$(date +%d-%B-%Y@%H-%M-%S).sql.gz"
+          /usr/lib/postgresql/${{ env.PG_VERSION }}/bin/pg_dump ${{ env.DATABASE_URL}} | gzip > "${FILENAME}"
+          echo "FILENAME=${FILENAME}" >> $GITHUB_ENV
+
+      # NOTE: This DB backup is public intentionally due to demo purposes. In a real-world scenario the backup artifact must be upload to a private storage service
+      - uses: actions/upload-artifact@v4
+        id: artifact-upload-step
+        name: Upload artifact
+        with:
+          name: hmfdb-backup-artifact
+          path: ${{ env.FILENAME }}
+          #   warn: Output a warning but do not fail the action (default)
+          #   error: Fail the action with an error message
+          #   ignore: Do not output any warnings or errors, the action does not fail
+          if-no-files-found: error
+          # 0 means using default retention.
+          # Minimum 1 day. Maximum 90 days unless changed from the repository settings page.
+          # Defaults to repository settings.
+          retention-days: 30
+
+      - name: Send "success" heartbeat to Betterstack Uptime
+        if: ${{ success() }}
+        run: wget -O- ${{ env.HEARTBEAT_URL }}
+
+      - name: Send "failure" heartbeat to Betterstack Uptime
+        if: ${{ failure() }}
+        run: wget -O- ${{ env.HEARTBEAT_URL }}/fail
+
+  notify-on-slack:
+    runs-on: ubuntu-22.04
+    needs: db-backup
+    # This job is not important to fail this workflow
+    continue-on-error: true
+    steps:
+      - name: Post message in slack channel
+        uses: slackapi/slack-github-action@v2
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          retries: 5
+          payload: |
+            blocks:
+              - type: "section"
+                text:
+                  type: "mrkdwn"
+                  text: "[GitHub Action] Database backup:\nTask result: ${{ needs.db-backup.result }}\nArtifact ID: ${{ needs.db-backup.outputs.artifact-id }}\nArtifact URL: ${{ needs.db-backup.outputs.artifact-url }}"
