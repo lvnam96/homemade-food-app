@@ -7,26 +7,131 @@ on:
     - cron: '0 0 * * *'
   workflow_dispatch:
 
+env:
+  FILE_PREFIX: 'hmfdb'
+
 jobs:
+  get-storage-token:
+    runs-on: ubuntu-22.04
+    env:
+      DROPBOX_REFRESH_TOKEN: ${{ secrets.DROPBOX_REFRESH_TOKEN }}
+      DROPBOX_APP_KEY: ${{ secrets.DROPBOX_APP_KEY }}
+      DROPBOX_APP_SECRET: ${{ secrets.DROPBOX_APP_SECRET }}
+    outputs:
+      token: ${{ steps.token.outputs.result }}
+    steps:
+      - name: Get new Dropbox access token
+        id: token
+        uses: actions/github-script@v6
+        with:
+          result-encoding: string # if not set, returned string is quoted (by default, `github-script` will JSON-ify the result)
+          script: |
+            try {
+              const params = new URLSearchParams();
+              params.append('grant_type', 'refresh_token');
+              params.append('refresh_token', process.env.DROPBOX_REFRESH_TOKEN);
+              params.append('client_id', process.env.DROPBOX_APP_KEY);
+              params.append('client_secret', process.env.DROPBOX_APP_SECRET);
+              const res = await fetch('https://api.dropboxapi.com/oauth2/token', {
+                method: 'POST',
+                body: params
+              }).then(res => res.json());
+              return res.access_token;
+            } catch (error) {
+              core.setFailed(error.message)
+            }
+
+  storage-cleanup:
+    runs-on: ubuntu-22.04
+    needs: get-storage-token
+    # This job is not important to fail this workflow
+    continue-on-error: true
+    steps:
+      - name: Search old backups in Dropbox
+        id: search
+        uses: actions/github-script@v6
+        env:
+          DROPBOX_ACCESS_TOKEN: ${{ needs.get-storage-token.outputs.token }}
+        with:
+          result-encoding: string # if not set, returned string is quoted (by default, `github-script` will JSON-ify the result)
+          script: |
+            try {
+              const res = await fetch('https://api.dropboxapi.com/2/files/search_v2', {
+                method: 'POST',
+                headers: {
+                  'Authorization': `Bearer ${process.env.DROPBOX_ACCESS_TOKEN}`,
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                  "match_field_options": {
+                    "include_highlights": false
+                  },
+                  "options": {
+                    "order_by": "last_modified_time",
+                    "file_status": "active",
+                    "filename_only": true,
+                    "max_results": 10,
+                    "file_extensions": ["gz"]
+                  },
+                  "query": process.env.FILE_PREFIX
+                })
+              }).then(res => res.json());
+
+              // Keep last 10 backups
+              if (res.matches?.length <= 10) return '';
+
+              const firstMatch = res.matches?.[res.matches.length - 1];
+              const firstMatchedFileMetadata =  firstMatch?.metadata[firstMatch?.metadata['.tag']];
+              return firstMatchedFileMetadata?.path_lower || firstMatchedFileMetadata?.path_display;
+            } catch (error) {
+              core.setFailed(error.message)
+            }
+      - name: Delete old backups in Dropbox
+        id: delete
+        uses: actions/github-script@v6
+        env:
+          DROPBOX_FILE_PATH: ${{ steps.search.outputs.result }}
+          DROPBOX_ACCESS_TOKEN: ${{ needs.get-storage-token.outputs.token }}
+        with:
+          script: |
+            try {
+              if (!process.env.DROPBOX_FILE_PATH) {
+                return;
+              }
+              return await fetch('https://api.dropboxapi.com/2/files/delete_v2', {
+                method: 'POST',
+                headers: {
+                  'Authorization': `Bearer ${process.env.DROPBOX_ACCESS_TOKEN}`,
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                  path: process.env.DROPBOX_FILE_PATH
+                })
+              }).then(res => res.json());
+            } catch (error) {
+              core.setFailed(error.message)
+            }
+
   db-backup:
     runs-on: ubuntu-22.04
+    needs: [get-storage-token, storage-cleanup]
     permissions:
       id-token: write
     env:
-      FILE_PREFIX: 'hmfdb'
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
-      HEARTBEAT_URL: ${{ secrets.BETTERSTACK_DB_BACKUP_HEARTBEAT_URL }}
       PG_VERSION: '17'
     outputs:
-      artifact-id: ${{ steps.artifact-upload-step.outputs.artifact-id }}
-      artifact-url: ${{ steps.artifact-upload-step.outputs.artifact-url }}
+      outcome: ${{ steps.dropbox.outcome }}
+      artifact-id: ${{ steps.upload-artifact.outputs.artifact-id }}
+      artifact-url: ${{ steps.upload-artifact.outputs.artifact-url }}
     steps:
-      - name: Install Act dependencies
+      # `sudo` is required to install `postgresql` packages & is missing when testing locally with github extension `act`
+      - name: Install `sudo`'s dependency packages
         if: ${{ env.ACT }}
         run: |
           apt update && apt install -y gnupg
 
-      - name: Install wget, sudo
+      - name: Install missing packages
         run: |
           apt install -y wget sudo
 
@@ -37,15 +142,27 @@ jobs:
           sudo apt install -y postgresql-client-${{ env.PG_VERSION }}
 
       - name: Run pg_dump
+        # echo "random_number=$(($RANDOM % 2))" >> $GITHUB_OUTPUT
         run: |
           FILENAME="${{ env.FILE_PREFIX }}-$(date +%d-%B-%Y@%H-%M-%S).sql.gz"
           /usr/lib/postgresql/${{ env.PG_VERSION }}/bin/pg_dump ${{ env.DATABASE_URL}} | gzip > "${FILENAME}"
           echo "FILENAME=${FILENAME}" >> $GITHUB_ENV
 
+      - name: Upload to Dropbox
+        id: dropbox
+        run: |
+          wget -O- https://content.dropboxapi.com/2/files/upload \
+          --header="Authorization: Bearer ${{ needs.get-storage-token.outputs.token }}" \
+          --header="Dropbox-API-Arg: {\"autorename\":false,\"mode\":\"add\",\"mute\":false,\"path\":\"/${{ env.FILENAME }}\",\"strict_conflict\":false}" \
+          --header="Content-Type: application/octet-stream" \
+          --show-progress \
+          --post-file=${{ env.FILENAME }}
+
       # NOTE: This DB backup is public intentionally due to demo purposes. In a real-world scenario the backup artifact must be upload to a private storage service
       - uses: actions/upload-artifact@v4
-        id: artifact-upload-step
+        id: upload-artifact
         name: Upload artifact
+        continue-on-error: true
         with:
           name: hmfdb-backup-artifact
           path: ${{ env.FILENAME }}
@@ -56,15 +173,22 @@ jobs:
           # 0 means using default retention.
           # Minimum 1 day. Maximum 90 days unless changed from the repository settings page.
           # Defaults to repository settings.
-          retention-days: 30
+          retention-days: 1
 
-      - name: Send "success" heartbeat to Betterstack Uptime
-        if: ${{ success() }}
-        run: wget -O- ${{ env.HEARTBEAT_URL }}
-
-      - name: Send "failure" heartbeat to Betterstack Uptime
-        if: ${{ failure() }}
-        run: wget -O- ${{ env.HEARTBEAT_URL }}/fail
+  heartbeat:
+    runs-on: ubuntu-22.04
+    needs: db-backup
+    # This job is not important to fail this workflow
+    continue-on-error: true
+    steps:
+      - name: Install missing packages
+        run: |
+          apt update && apt install -y wget
+      - name: Send heartbeat to Betterstack Uptime
+        env:
+          HEARTBEAT_URL: ${{ secrets.BETTERSTACK_DB_BACKUP_HEARTBEAT_URL }}
+        run: |
+          if [[ ${{ needs.db-backup.outputs.outcome }} == 'success' ]]; then wget -O- ${{ env.HEARTBEAT_URL }}; else wget -O- ${{ env.HEARTBEAT_URL }}/fail; fi
 
   notify-on-slack:
     runs-on: ubuntu-22.04
@@ -83,4 +207,4 @@ jobs:
               - type: "section"
                 text:
                   type: "mrkdwn"
-                  text: "[GitHub Action] Database backup:\nTask result: ${{ needs.db-backup.result }}\nArtifact ID: ${{ needs.db-backup.outputs.artifact-id }}\nArtifact URL: ${{ needs.db-backup.outputs.artifact-url }}"
+                  text: "[GitHub Action] Database backup:\nArtifact ID: ${{ needs.db-backup.outputs.artifact-id }}\nArtifact URL: ${{ needs.db-backup.outputs.artifact-url }}"
