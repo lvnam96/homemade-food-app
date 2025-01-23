@@ -11,11 +11,11 @@
 
 - [Docker](https://docs.docker.com/get-docker/)
 - [Docker Compose](https://docs.docker.com/compose/install/)
-- [pnpm v9](https://pnpm.io/)
+- [pnpm v9](https://pnpm.io/installation)
 
 ## Development
 
-For first-time database setup, there will be some [setup SQL scripts](./app/.server/db/sql) to setup database schema and seed data. They are automatically executed if the database is empty. See [remix-dev.Dockerfile](./remix-dev.Dockerfile) for more details.
+For first-time database setup, there will be some [SQL scripts](./app/.server/db/sql) to create database schema and seed data. This is done automatically if the volume of postgres database service is empty. See [docker-compose.yml](./docker-compose.yml) for more details.
 
 To init development server, run the following commands:
 
@@ -28,7 +28,11 @@ cp .env.example .env
 
 # Init services
 pnpm dev # enable Docker compose's watch mode to auto rebuild Remix image on deps change; press Ctrl+C to exit
+```
 
+To stop development server, run:
+
+```bash
 # Remove services' containers and volumes
 pnpm dev:down
 ```
