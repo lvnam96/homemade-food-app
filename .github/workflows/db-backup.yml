@@ -125,15 +125,15 @@ jobs:
       artifact-id: ${{ steps.upload-artifact.outputs.artifact-id }}
       artifact-url: ${{ steps.upload-artifact.outputs.artifact-url }}
     steps:
-      # `sudo` is required to install `postgresql` packages & is missing when testing locally with github extension `act`
-      - name: Install `sudo`'s dependency packages
+      # `sudo` is required to install packages & is missing when testing locally with github extension `act`
+      - name: Install `act`'s missing packages
         if: ${{ env.ACT }}
         run: |
-          apt update && apt install -y gnupg
+          apt update && apt install -y sudo gnupg
 
       - name: Install missing packages
         run: |
-          apt install -y wget sudo
+          sudo apt update && sudo apt install -y wget
 
       - name: Install PostgreSQL
         run: |
@@ -181,9 +181,16 @@ jobs:
     # This job is not important to fail this workflow
     continue-on-error: true
     steps:
+      # `sudo` is required to install packages & is missing when testing locally with github extension `act`
+      - name: Install `act`'s missing packages
+        if: ${{ env.ACT }}
+        run: |
+          apt update && apt install -y sudo gnupg
+
       - name: Install missing packages
         run: |
-          apt update && apt install -y wget
+          sudo apt update && sudo apt install -y wget
+
       - name: Send heartbeat to Betterstack Uptime
         env:
           HEARTBEAT_URL: ${{ secrets.BETTERSTACK_DB_BACKUP_HEARTBEAT_URL }}
