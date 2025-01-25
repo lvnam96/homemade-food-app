@@ -32,18 +32,10 @@ describe('Password service:', () => {
     });
 
     it('should throw error if "password" argument is invalid', async () => {
-      try {
-        // @ts-expect-error intentally passing invalid arg type
-        await getSaltedPasswd();
-      } catch (err) {
-        expect(err instanceof Error).toBe(true);
-      }
-      try {
-        // @ts-expect-error intentally passing invalid arg type
-        await getSaltedPasswd(123);
-      } catch (err) {
-        expect(err instanceof Error).toBe(true);
-      }
+      // @ts-expect-error intentally passing invalid arg type
+      await expect(() => getSaltedPasswd()).rejects.toThrow();
+      // @ts-expect-error intentally passing invalid arg type
+      await expect(() => getSaltedPasswd(123)).rejects.toThrow();
     });
   });
 });
