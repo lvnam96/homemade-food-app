@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { getStrongCryptoRandomStr } from './random.server';
 
-describe('Random utils:', () => {
+describe('getStrongCryptoRandomStr()', () => {
   it('should generate random string', async () => {
     const str = await getStrongCryptoRandomStr(16);
     expect(typeof str).toBe('string');
