@@ -1,0 +1,22 @@
+component_management:
+  individual_components:
+    - component_id: 'utils'
+      paths:
+        - 'app/utils/'
+    - component_id: 'services'
+      paths:
+        - 'app/services/'
+    - component_id: 'modules/auth'
+      paths:
+        - 'app/modules/auth/'
+    - component_id: 'modules/url'
+      paths:
+        - 'app/modules/url/'
+
+comment:
+  layout: 'condensed_header, diff, flags, condensed_files, components, condensed_footer' # show component info in the PR comment
+  # behavior: default
+  # require_changes: false
+  require_base: false # [true :: must have a base report to post]
+  # require_head: true # [true :: must have a head report to post]
+  hide_project_coverage: false # [true :: only show coverage on the git diff]
