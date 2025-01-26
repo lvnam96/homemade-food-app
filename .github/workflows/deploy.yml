@@ -73,7 +73,7 @@ jobs:
         with:
           run_install: false
 
-      - name: ⎔ Setup Node
+      - name: ⎔ Setup node
         uses: actions/setup-node@v4
         with:
           cache: 'pnpm'
@@ -83,19 +83,13 @@ jobs:
         run: pnpm install
 
       - name: ⚡ Run tests
-        # run: pnpm run test:coverage --reporter=junit --outputFile=test-report.junit.xml
-        run: pnpm run test
+        run: pnpm run test --reporter=junit --outputFile=test-report.junit.xml
 
-      # - name: 📊 Upload coverage results to Codecov
-      #   uses: codecov/codecov-action@v5
-      #   with:
-      #     token: ${{ secrets.CODECOV_TOKEN }}
-
-      # - name: 📊 Upload test results to Codecov
-      #   if: ${{ !cancelled() }}
-      #   uses: codecov/test-results-action@v1
-      #   with:
-      #     token: ${{ secrets.CODECOV_TOKEN }}
+      - name: 📊 Upload test results to Codecov
+        if: ${{ !cancelled() }}
+        uses: codecov/test-results-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
 
   # playwright:
   #   name: 🎭 Playwright
