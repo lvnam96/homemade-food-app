@@ -23,7 +23,8 @@ jobs:
       - name: ⬇️ Checkout repo
         uses: actions/checkout@v4
 
-      - uses: pnpm/action-setup@v4
+      - name: 📦 Install package manager
+        uses: pnpm/action-setup@v4
         with:
           run_install: false
 
@@ -46,7 +47,8 @@ jobs:
       - name: ⬇️ Checkout repo
         uses: actions/checkout@v4
 
-      - uses: pnpm/action-setup@v4
+      - name: 📦 Install package manager
+        uses: pnpm/action-setup@v4
         with:
           run_install: false
 
@@ -69,7 +71,8 @@ jobs:
       - name: ⬇️ Checkout repo
         uses: actions/checkout@v4
 
-      - uses: pnpm/action-setup@v4
+      - name: 📦 Install package manager
+        uses: pnpm/action-setup@v4
         with:
           run_install: false
 
@@ -102,7 +105,8 @@ jobs:
   #     - name: 🏄 Copy test env vars
   #       run: cp .env.example .env
 
-  #     - uses: pnpm/action-setup@v4
+  #     - name: 📦 Install package manager
+  #       uses: pnpm/action-setup@v4
   #       with:
   #         run_install: false
 
@@ -159,7 +163,8 @@ jobs:
       - name: ⬇️ Checkout repo
         uses: actions/checkout@v4
 
-      - uses: pnpm/action-setup@v4
+      - name: 📦 Install package manager
+        uses: pnpm/action-setup@v4
         with:
           run_install: false
 

@@ -1,5 +1,5 @@
 # NOTE: When testing this workflow with github extension `act`, see: https://github.com/nektos/act/issues/1929#issuecomment-2561989254
-name: Backup database
+name: 💾 Backup database
 
 on:
   schedule:
@@ -20,7 +20,7 @@ jobs:
     outputs:
       token: ${{ steps.token.outputs.result }}
     steps:
-      - name: Get new Dropbox access token
+      - name: 🎟️ Get new Dropbox access token
         id: token
         uses: actions/github-script@v6
         with:
@@ -47,7 +47,7 @@ jobs:
     # This job is not important to fail this workflow
     continue-on-error: true
     steps:
-      - name: Search old backups in Dropbox
+      - name: 📂 Search old backups in Dropbox
         id: search
         uses: actions/github-script@v6
         env:
@@ -86,7 +86,7 @@ jobs:
             } catch (error) {
               core.setFailed(error.message)
             }
-      - name: Delete old backups in Dropbox
+      - name: 💥 Delete old backups in Dropbox
         id: delete
         uses: actions/github-script@v6
         env:
@@ -126,29 +126,29 @@ jobs:
       artifact-url: ${{ steps.upload-artifact.outputs.artifact-url }}
     steps:
       # `sudo` is required to install packages & is missing when testing locally with github extension `act`
-      - name: Install `act`'s missing packages
+      - name: 📥 Install `act`'s missing packages
         if: ${{ env.ACT }}
         run: |
           apt update && apt install -y sudo gnupg
 
-      - name: Install missing packages
+      - name: 📥 Install missing packages
         run: |
           sudo apt update && sudo apt install -y wget
 
-      - name: Install PostgreSQL
+      - name: 📥 Install PostgreSQL
         run: |
           sudo apt install -y postgresql-common
           yes '' | sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh
           sudo apt install -y postgresql-client-${{ env.PG_VERSION }}
 
-      - name: Run pg_dump
+      - name: 💾 Run pg_dump
         # echo "random_number=$(($RANDOM % 2))" >> $GITHUB_OUTPUT
         run: |
           FILENAME="${{ env.FILE_PREFIX }}-$(date +%d-%B-%Y@%H-%M-%S).sql.gz"
           /usr/lib/postgresql/${{ env.PG_VERSION }}/bin/pg_dump ${{ env.DATABASE_URL}} | gzip > "${FILENAME}"
           echo "FILENAME=${FILENAME}" >> $GITHUB_ENV
 
-      - name: Upload to Dropbox
+      - name: 📤 Upload to Dropbox
         id: dropbox
         run: |
           wget -O- https://content.dropboxapi.com/2/files/upload \
@@ -159,9 +159,9 @@ jobs:
           --post-file=${{ env.FILENAME }}
 
       # NOTE: This DB backup is public intentionally due to demo purposes. In a real-world scenario the backup artifact must be upload to a private storage service
-      - uses: actions/upload-artifact@v4
+      - name: 💻 Upload artifact
+        uses: actions/upload-artifact@v4
         id: upload-artifact
-        name: Upload artifact
         continue-on-error: true
         with:
           name: hmfdb-backup-artifact
@@ -182,16 +182,16 @@ jobs:
     continue-on-error: true
     steps:
       # `sudo` is required to install packages & is missing when testing locally with github extension `act`
-      - name: Install `act`'s missing packages
+      - name: 📥 Install `act`'s missing packages
         if: ${{ env.ACT }}
         run: |
           apt update && apt install -y sudo gnupg
 
-      - name: Install missing packages
+      - name: 📥 Install missing packages
         run: |
           sudo apt update && sudo apt install -y wget
 
-      - name: Send heartbeat to Betterstack Uptime
+      - name: 📡 Send heartbeat to Betterstack Uptime
         env:
           HEARTBEAT_URL: ${{ secrets.BETTERSTACK_DB_BACKUP_HEARTBEAT_URL }}
         run: |
@@ -203,7 +203,7 @@ jobs:
     # This job is not important to fail this workflow
     continue-on-error: true
     steps:
-      - name: Post message in slack channel
+      - name: 💬 Post message in slack channel
         uses: slackapi/slack-github-action@v2
         with:
           webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
