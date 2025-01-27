@@ -47,28 +47,21 @@ jobs:
       - name: ⬇️ Checkout repo
         uses: actions/checkout@v4
 
-      - uses: pnpm/action-setup@v4
-        with:
-          run_install: false
-
       - name: ⎔ Setup Node
         uses: actions/setup-node@v4
         with:
-          cache: 'pnpm'
-          node-version: 22
+          cache: 'npm'
+          node-version-file: package.json
 
       - name: 📥 Install dbdocs
-        run: pnpm install -g dbdocs
+        run: npm install -g dbdocs
 
       - name: 📥 Install @dbml/cli
-        run: pnpm install -g @dbml/cli
+        run: npm install -g @dbml/cli
 
       - name: 📄 Generate dbml
         # run: dbdocs db2dbml postgres ${{ secrets.DATABASE_URL }} -o $DBML_FILE_PATH
         run: sql2dbml --postgres $SQL_FILE_PATH -o $DBML_FILE_PATH
-
-      - name: Check dbdocs available
-        run: dbdocs
 
       - name: 🔎 Validate dbml
         run: dbdocs validate $DBML_FILE_PATH
