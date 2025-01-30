@@ -7,15 +7,15 @@ import { getStrongCryptoRandomStr } from '~/utils/random.server';
 /**
  * @param raw raw password + salt
  */
-export const hash = (raw: string, saltRounds = 10) => bcryptHash(raw, saltRounds);
+export const hashPassword = (raw: string, saltRounds = 10) => bcryptHash(raw, saltRounds);
 
 /**
  * @param raw raw password + salt
  * @param hash password string in database
  */
-export const compare = bcryptCompare;
+export const comparePassword = bcryptCompare;
 
-export const getSaltedPasswd = async (passwd: string, salt?: string) => {
+export const getSaltedPassword = async (passwd: string, salt?: string) => {
   if (!passwd || typeof passwd !== 'string') throw new Error('"passwd" argument is invalid');
   salt = salt || (await getStrongCryptoRandomStr());
   return {
