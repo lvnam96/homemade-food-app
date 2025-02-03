@@ -270,6 +270,43 @@ export const validateInstance = <T extends FunctionConstructor>(
   return object;
 };
 
+export const convertDateToTimestamp = (date: Date) => {
+  if (!(date instanceof Date)) {
+    throw new Error('Date must be an instance of Date');
+  }
+  return Math.floor(date.getTime() / 1000);
+};
+
+export const convertTimestampToDate = (timestamp: number) => {
+  if (!Number.isFinite(timestamp)) {
+    throw new Error('Timestamp must be a finite number');
+  }
+  return new Date(timestamp * 1000);
+};
+
+export const makeDatePropsJsonCompatible = <T extends Record<string, any>>(
+  obj: T,
+): Record<string, JSONValue> | null => {
+  if (obj === null) {
+    return obj;
+  }
+
+  if (!checkIsObjectLike(obj)) {
+    throw new Error('First argument must be an object');
+  }
+
+  const newObj: Record<string, JSONValue> = { ...obj };
+  Object.keys(newObj).forEach((key) => {
+    const value = newObj[key];
+    if (value instanceof Date) {
+      newObj[key] = convertDateToTimestamp(value);
+    } else if (checkIsObjectLike(value)) {
+      newObj[key] = makeDatePropsJsonCompatible(value);
+    }
+  });
+  return newObj;
+};
+
 /**
  * Gets the `toStringTag` of `value`.
  *

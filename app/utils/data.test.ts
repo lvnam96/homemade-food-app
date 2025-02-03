@@ -3,12 +3,15 @@ import {
   checkIsEmpty,
   checkIsFunction,
   checkIsPlainObject,
+  convertDateToTimestamp,
   convertMapToObject,
   convertObjectToMap,
+  convertTimestampToDate,
   debounce,
   decodeBase64,
   encodeBase64,
   identity,
+  makeDatePropsJsonCompatible,
   omit,
   pick,
   shuffle,
@@ -346,5 +349,50 @@ describe('validateInstance()', () => {
     expect(() => validateInstance({}, A)).toThrow();
     // @ts-expect-error intentionally passing invalid arg type
     expect(() => validateInstance(new A(), Array)).toThrow();
+  });
+});
+
+describe('convertDateToTimestamp', () => {
+  it('should convert a Date object to a timestamp', () => {
+    const timestamp1 = convertDateToTimestamp(new Date('2021-01-01T00:00:00.000Z'));
+    expect(timestamp1).toBe(1609459200);
+  });
+
+  it('should convert a Date object with milliseconds to a timestamp', () => {
+    const timestamp1 = convertDateToTimestamp(new Date('2021-01-01T00:00:00.000Z'));
+    const timestamp2 = convertDateToTimestamp(new Date('2021-01-01T00:00:00.123Z'));
+    expect(timestamp1).toBe(timestamp2);
+    expect(timestamp2).toBe(1609459200);
+  });
+
+  it('should throw an error if the argument is not a Date object', () => {
+    // @ts-expect-error Testing invalid argument
+    expect(() => convertDateToTimestamp('2021-01-01T00:00:00.000Z')).toThrowError();
+  });
+});
+
+describe('convertTimestampToDate', () => {
+  it('should convert a timestamp to a Date object', () => {
+    const timestamp = 1609459200; // 2021-01-01T00:00:00.000Z
+    const date = convertTimestampToDate(timestamp);
+    expect(date instanceof Date).toBe(true);
+    expect(date.getUTCFullYear()).toBe(2021);
+    expect(date.getUTCMonth()).toBe(0);
+    expect(date.getUTCDate()).toBe(1);
+    expect(date.getUTCHours()).toBe(0);
+  });
+
+  it('should throw an error if the argument is not a number', () => {
+    // @ts-expect-error Testing invalid argument
+    expect(() => convertTimestampToDate('2021-01-01T00:00:00.000Z')).toThrowError();
+  });
+});
+
+describe('makeDatePropsJsonCompatible', () => {
+  it('should convert object with `Date` value to a timestamp to be JSON compatible', () => {
+    const timestamp = 1609459200; // 2021-01-01T00:00:00.000Z
+    const date = convertTimestampToDate(timestamp);
+    const dateProps = makeDatePropsJsonCompatible({ date });
+    expect(dateProps?.date).toBe(timestamp);
   });
 });
