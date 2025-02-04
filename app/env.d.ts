@@ -4,6 +4,18 @@ type JSONArray = JSONValue[];
 type Timestamp = number;
 type DatetimeString = `${number}-${number}-${number}T${number}:${number}:${number}`;
 
+type TokenPayloadUserInfo = {
+  id: number;
+  // username: string;
+  email: string;
+};
+type TokenPayload = {
+  sessionId: number;
+  user: TokenPayloadUserInfo;
+};
+type AccessTokenPayload = TokenPayload;
+type RefreshTokenPayload = TokenPayload;
+
 interface Navigator {
   readonly standalone: boolean; // supported in chromium browers
   readonly msMaxTouchPoints: number;
