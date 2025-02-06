@@ -12,11 +12,15 @@
   "endOfLine": "lf",
   "jsxSingleQuote": false,
   "singleAttributePerLine": true,
-  "language": "postgresql",
-  "dialect": "postgresql",
-  "keywordCase": "upper",
   "plugins": ["prettier-plugin-tailwindcss", "prettier-plugin-sql"],
   "overrides": [
+    {
+      "files": "*.sql",
+      "options": {
+        "language": "postgresql",
+        "keywordCase": "upper"
+      }
+    },
     {
       "files": ".prettierrc",
       "options": {
