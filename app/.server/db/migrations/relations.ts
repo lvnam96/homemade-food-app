@@ -1,36 +1,48 @@
 import { relations } from "drizzle-orm/relations";
-import { usersInHf, userAddressesInHf, addressesInHf, emailDomains, merchantsInHf, merchantAddressesInHf, merchantContactInfoInHf, districts, provinces, productsInHf, productMediaInHf, followsInHf, productCategoriesInHf, discountsInHf, merchantPostsInHf, administrativeUnits, ordersInHf, administrativeRegions, wards, rolesInHf, merchantPaymentMethodsInHf, userRolesInHf, orderProductsInHf } from "./schema";
+import { usersInHf, authSessionsInHf, merchantsInHf, addressesInHf, districts, provinces, merchantContactInfoInHf, merchantPostsInHf, merchantPaymentMethodsInHf, productsInHf, discountsInHf, followsInHf, ordersInHf, shippingAddressesInHf, orderItemsInHf, productMediaInHf, productCategoriesInHf, administrativeUnits, wards, userCredentialsInHf, administrativeRegions, productsToCategoriesInHf, userAddressesInHf, userRolesInHf, rolesInHf } from "./schema";
 
-export const userAddressesInHfRelations = relations(userAddressesInHf, ({one, many}) => ({
+export const authSessionsInHfRelations = relations(authSessionsInHf, ({one}) => ({
 	usersInHf: one(usersInHf, {
-		fields: [userAddressesInHf.userId],
+		fields: [authSessionsInHf.userId],
+		references: [usersInHf.id]
+	}),
+}));
+
+export const usersInHfRelations = relations(usersInHf, ({many}) => ({
+	authSessionsInHfs: many(authSessionsInHf),
+	merchantsInHfs: many(merchantsInHf),
+	followsInHfs: many(followsInHf),
+	ordersInHfs: many(ordersInHf),
+	userCredentialsInHfs: many(userCredentialsInHf),
+	userAddressesInHfs: many(userAddressesInHf),
+	userRolesInHfs_userId: many(userRolesInHf, {
+		relationName: "userRolesInHf_userId_usersInHf_id"
+	}),
+	userRolesInHfs_assignedBy: many(userRolesInHf, {
+		relationName: "userRolesInHf_assignedBy_usersInHf_id"
+	}),
+}));
+
+export const merchantsInHfRelations = relations(merchantsInHf, ({one, many}) => ({
+	usersInHf: one(usersInHf, {
+		fields: [merchantsInHf.ownerId],
 		references: [usersInHf.id]
 	}),
 	addressesInHf: one(addressesInHf, {
-		fields: [userAddressesInHf.addressId],
+		fields: [merchantsInHf.addressId],
 		references: [addressesInHf.id]
 	}),
-	ordersInHfs: many(ordersInHf),
-}));
-
-export const usersInHfRelations = relations(usersInHf, ({one, many}) => ({
-	userAddressesInHfs: many(userAddressesInHf),
-	emailDomain: one(emailDomains, {
-		fields: [usersInHf.emailDomainId],
-		references: [emailDomains.id]
-	}),
-	merchantsInHf: one(merchantsInHf, {
-		fields: [usersInHf.id],
-		references: [merchantsInHf.ownerId]
-	}),
+	merchantContactInfoInHfs: many(merchantContactInfoInHf),
+	merchantPostsInHfs: many(merchantPostsInHf),
+	merchantPaymentMethodsInHfs: many(merchantPaymentMethodsInHf),
+	productsInHfs: many(productsInHf),
 	followsInHfs: many(followsInHf),
 	ordersInHfs: many(ordersInHf),
-	userRolesInHfs: many(userRolesInHf),
+	productCategoriesInHfs: many(productCategoriesInHf),
 }));
 
 export const addressesInHfRelations = relations(addressesInHf, ({one, many}) => ({
-	userAddressesInHfs: many(userAddressesInHf),
-	merchantAddressesInHfs: many(merchantAddressesInHf),
+	merchantsInHfs: many(merchantsInHf),
 	district: one(districts, {
 		fields: [addressesInHf.districtId],
 		references: [districts.code]
@@ -39,45 +51,12 @@ export const addressesInHfRelations = relations(addressesInHf, ({one, many}) => 
 		fields: [addressesInHf.provinceId],
 		references: [provinces.code]
 	}),
-}));
-
-export const emailDomainsRelations = relations(emailDomains, ({many}) => ({
-	usersInHfs: many(usersInHf),
-}));
-
-export const merchantsInHfRelations = relations(merchantsInHf, ({one, many}) => ({
-	usersInHfs: many(usersInHf),
-	merchantContactInfoInHf: one(merchantContactInfoInHf, {
-		fields: [merchantsInHf.id],
-		references: [merchantContactInfoInHf.merchantId]
-	}),
-	merchantAddressesInHf: one(merchantAddressesInHf, {
-		fields: [merchantsInHf.id],
-		references: [merchantAddressesInHf.merchantId]
-	}),
-	followsInHfs: many(followsInHf),
-	productsInHfs: many(productsInHf),
-	merchantPostsInHfs: many(merchantPostsInHf),
-	productCategoriesInHfs: many(productCategoriesInHf),
-	ordersInHfs: many(ordersInHf),
-	rolesInHfs: many(rolesInHf),
-	merchantPaymentMethodsInHfs: many(merchantPaymentMethodsInHf),
-}));
-
-export const merchantAddressesInHfRelations = relations(merchantAddressesInHf, ({one, many}) => ({
-	addressesInHf: one(addressesInHf, {
-		fields: [merchantAddressesInHf.addressId],
-		references: [addressesInHf.id]
-	}),
-	merchantsInHfs: many(merchantsInHf),
-}));
-
-export const merchantContactInfoInHfRelations = relations(merchantContactInfoInHf, ({many}) => ({
-	merchantsInHfs: many(merchantsInHf),
+	userAddressesInHfs: many(userAddressesInHf),
 }));
 
 export const districtsRelations = relations(districts, ({one, many}) => ({
 	addressesInHfs: many(addressesInHf),
+	wards: many(wards),
 	administrativeUnit: one(administrativeUnits, {
 		fields: [districts.administrativeUnitId],
 		references: [administrativeUnits.id]
@@ -86,7 +65,6 @@ export const districtsRelations = relations(districts, ({one, many}) => ({
 		fields: [districts.provinceCode],
 		references: [provinces.code]
 	}),
-	wards: many(wards),
 }));
 
 export const provincesRelations = relations(provinces, ({one, many}) => ({
@@ -102,28 +80,44 @@ export const provincesRelations = relations(provinces, ({one, many}) => ({
 	}),
 }));
 
-export const productMediaInHfRelations = relations(productMediaInHf, ({one}) => ({
-	productsInHf: one(productsInHf, {
-		fields: [productMediaInHf.productId],
-		references: [productsInHf.id]
+export const merchantContactInfoInHfRelations = relations(merchantContactInfoInHf, ({one}) => ({
+	merchantsInHf: one(merchantsInHf, {
+		fields: [merchantContactInfoInHf.merchantId],
+		references: [merchantsInHf.id]
+	}),
+}));
+
+export const merchantPostsInHfRelations = relations(merchantPostsInHf, ({one}) => ({
+	merchantsInHf: one(merchantsInHf, {
+		fields: [merchantPostsInHf.merchantId],
+		references: [merchantsInHf.id]
+	}),
+}));
+
+export const merchantPaymentMethodsInHfRelations = relations(merchantPaymentMethodsInHf, ({one}) => ({
+	merchantsInHf: one(merchantsInHf, {
+		fields: [merchantPaymentMethodsInHf.merchantId],
+		references: [merchantsInHf.id]
 	}),
 }));
 
 export const productsInHfRelations = relations(productsInHf, ({one, many}) => ({
-	productMediaInHfs: many(productMediaInHf),
 	merchantsInHf: one(merchantsInHf, {
 		fields: [productsInHf.merchantId],
 		references: [merchantsInHf.id]
-	}),
-	productCategoriesInHf: one(productCategoriesInHf, {
-		fields: [productsInHf.categoryId],
-		references: [productCategoriesInHf.id]
 	}),
 	discountsInHf: one(discountsInHf, {
 		fields: [productsInHf.discountId],
 		references: [discountsInHf.id]
 	}),
-	orderProductsInHfs: many(orderProductsInHf),
+	orderItemsInHfs: many(orderItemsInHf),
+	productMediaInHfs: many(productMediaInHf),
+	productsToCategoriesInHfs: many(productsToCategoriesInHf),
+}));
+
+export const discountsInHfRelations = relations(discountsInHf, ({many}) => ({
+	productsInHfs: many(productsInHf),
+	ordersInHfs: many(ordersInHf),
 }));
 
 export const followsInHfRelations = relations(followsInHf, ({one}) => ({
@@ -137,8 +131,49 @@ export const followsInHfRelations = relations(followsInHf, ({one}) => ({
 	}),
 }));
 
+export const ordersInHfRelations = relations(ordersInHf, ({one, many}) => ({
+	discountsInHf: one(discountsInHf, {
+		fields: [ordersInHf.discountId],
+		references: [discountsInHf.id]
+	}),
+	usersInHf: one(usersInHf, {
+		fields: [ordersInHf.userId],
+		references: [usersInHf.id]
+	}),
+	merchantsInHf: one(merchantsInHf, {
+		fields: [ordersInHf.merchantId],
+		references: [merchantsInHf.id]
+	}),
+	shippingAddressesInHf: one(shippingAddressesInHf, {
+		fields: [ordersInHf.shippingAddressId],
+		references: [shippingAddressesInHf.id]
+	}),
+	orderItemsInHfs: many(orderItemsInHf),
+}));
+
+export const shippingAddressesInHfRelations = relations(shippingAddressesInHf, ({many}) => ({
+	ordersInHfs: many(ordersInHf),
+}));
+
+export const orderItemsInHfRelations = relations(orderItemsInHf, ({one}) => ({
+	ordersInHf: one(ordersInHf, {
+		fields: [orderItemsInHf.orderId],
+		references: [ordersInHf.id]
+	}),
+	productsInHf: one(productsInHf, {
+		fields: [orderItemsInHf.productId],
+		references: [productsInHf.id]
+	}),
+}));
+
+export const productMediaInHfRelations = relations(productMediaInHf, ({one}) => ({
+	productsInHf: one(productsInHf, {
+		fields: [productMediaInHf.productId],
+		references: [productsInHf.id]
+	}),
+}));
+
 export const productCategoriesInHfRelations = relations(productCategoriesInHf, ({one, many}) => ({
-	productsInHfs: many(productsInHf),
 	merchantsInHf: one(merchantsInHf, {
 		fields: [productCategoriesInHf.merchantId],
 		references: [merchantsInHf.id]
@@ -151,43 +186,7 @@ export const productCategoriesInHfRelations = relations(productCategoriesInHf, (
 	productCategoriesInHfs: many(productCategoriesInHf, {
 		relationName: "productCategoriesInHf_parentId_productCategoriesInHf_id"
 	}),
-}));
-
-export const discountsInHfRelations = relations(discountsInHf, ({many}) => ({
-	productsInHfs: many(productsInHf),
-}));
-
-export const merchantPostsInHfRelations = relations(merchantPostsInHf, ({one}) => ({
-	merchantsInHf: one(merchantsInHf, {
-		fields: [merchantPostsInHf.merchantId],
-		references: [merchantsInHf.id]
-	}),
-}));
-
-export const administrativeUnitsRelations = relations(administrativeUnits, ({many}) => ({
-	districts: many(districts),
-	provinces: many(provinces),
-	wards: many(wards),
-}));
-
-export const ordersInHfRelations = relations(ordersInHf, ({one, many}) => ({
-	usersInHf: one(usersInHf, {
-		fields: [ordersInHf.userId],
-		references: [usersInHf.id]
-	}),
-	merchantsInHf: one(merchantsInHf, {
-		fields: [ordersInHf.merchantId],
-		references: [merchantsInHf.id]
-	}),
-	userAddressesInHf: one(userAddressesInHf, {
-		fields: [ordersInHf.shippingAddressId],
-		references: [userAddressesInHf.id]
-	}),
-	orderProductsInHfs: many(orderProductsInHf),
-}));
-
-export const administrativeRegionsRelations = relations(administrativeRegions, ({many}) => ({
-	provinces: many(provinces),
+	productsToCategoriesInHfs: many(productsToCategoriesInHf),
 }));
 
 export const wardsRelations = relations(wards, ({one}) => ({
@@ -201,25 +200,55 @@ export const wardsRelations = relations(wards, ({one}) => ({
 	}),
 }));
 
-export const rolesInHfRelations = relations(rolesInHf, ({one, many}) => ({
-	merchantsInHf: one(merchantsInHf, {
-		fields: [rolesInHf.merchantId],
-		references: [merchantsInHf.id]
-	}),
-	userRolesInHfs: many(userRolesInHf),
+export const administrativeUnitsRelations = relations(administrativeUnits, ({many}) => ({
+	wards: many(wards),
+	districts: many(districts),
+	provinces: many(provinces),
 }));
 
-export const merchantPaymentMethodsInHfRelations = relations(merchantPaymentMethodsInHf, ({one}) => ({
-	merchantsInHf: one(merchantsInHf, {
-		fields: [merchantPaymentMethodsInHf.merchantId],
-		references: [merchantsInHf.id]
+export const userCredentialsInHfRelations = relations(userCredentialsInHf, ({one}) => ({
+	usersInHf: one(usersInHf, {
+		fields: [userCredentialsInHf.userId],
+		references: [usersInHf.id]
+	}),
+}));
+
+export const administrativeRegionsRelations = relations(administrativeRegions, ({many}) => ({
+	provinces: many(provinces),
+}));
+
+export const productsToCategoriesInHfRelations = relations(productsToCategoriesInHf, ({one}) => ({
+	productsInHf: one(productsInHf, {
+		fields: [productsToCategoriesInHf.productId],
+		references: [productsInHf.id]
+	}),
+	productCategoriesInHf: one(productCategoriesInHf, {
+		fields: [productsToCategoriesInHf.categoryId],
+		references: [productCategoriesInHf.id]
+	}),
+}));
+
+export const userAddressesInHfRelations = relations(userAddressesInHf, ({one}) => ({
+	usersInHf: one(usersInHf, {
+		fields: [userAddressesInHf.userId],
+		references: [usersInHf.id]
+	}),
+	addressesInHf: one(addressesInHf, {
+		fields: [userAddressesInHf.addressId],
+		references: [addressesInHf.id]
 	}),
 }));
 
 export const userRolesInHfRelations = relations(userRolesInHf, ({one}) => ({
-	usersInHf: one(usersInHf, {
+	usersInHf_userId: one(usersInHf, {
 		fields: [userRolesInHf.userId],
-		references: [usersInHf.id]
+		references: [usersInHf.id],
+		relationName: "userRolesInHf_userId_usersInHf_id"
+	}),
+	usersInHf_assignedBy: one(usersInHf, {
+		fields: [userRolesInHf.assignedBy],
+		references: [usersInHf.id],
+		relationName: "userRolesInHf_assignedBy_usersInHf_id"
 	}),
 	rolesInHf: one(rolesInHf, {
 		fields: [userRolesInHf.roleId],
@@ -227,13 +256,6 @@ export const userRolesInHfRelations = relations(userRolesInHf, ({one}) => ({
 	}),
 }));
 
-export const orderProductsInHfRelations = relations(orderProductsInHf, ({one}) => ({
-	ordersInHf: one(ordersInHf, {
-		fields: [orderProductsInHf.orderId],
-		references: [ordersInHf.id]
-	}),
-	productsInHf: one(productsInHf, {
-		fields: [orderProductsInHf.productId],
-		references: [productsInHf.id]
-	}),
+export const rolesInHfRelations = relations(rolesInHf, ({many}) => ({
+	userRolesInHfs: many(userRolesInHf),
 }));
