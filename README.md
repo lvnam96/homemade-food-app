@@ -27,12 +27,15 @@ pnpm install
 cp .env.example .env
 
 # Init services
-pnpm dev # enable Docker compose's watch mode to auto rebuild Remix image on deps change; press Ctrl+C to exit
+pnpm dev # enable Docker compose's watch mode to auto rebuild Remix image on deps change; press Ctrl+C to exit Watch mode
 ```
 
 To stop development server, run:
 
 ```bash
 # Remove services' containers and volumes
+pnpm dev:down-vols
+
+# Remove services' containers only
 pnpm dev:down
 ```
