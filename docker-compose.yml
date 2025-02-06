@@ -24,6 +24,7 @@ services:
       # Note: files are renamed to ensure they are executed in the correct order
       - ./app/.server/db/sql/schema.sql:/docker-entrypoint-initdb.d/1.sql
       - ./app/.server/db/sql/vietnamese-admin-units-data.sql:/docker-entrypoint-initdb.d/2.sql
+      - ./app/.server/db/sql/procedure.sql:/docker-entrypoint-initdb.d/3.sql
       - pgdata:/var/lib/postgresql/data
     deploy:
       resources:
