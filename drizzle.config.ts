@@ -9,6 +9,7 @@ export default defineConfig({
   schema: process.cwd() + '/app/.server/db/schema.ts',
   dialect: 'postgresql',
   breakpoints: false,
+  casing: 'snake_case',
   verbose: true,
   strict: true,
   entities: {
