@@ -9,7 +9,12 @@ RUN corepack enable
 
 COPY package.json ./
 
-RUN corepack install
+# RUN corepack install # NOTE: using this causes corepack throwing error when updating project's deps later. Use either:
+# 1. keep using the installed version of corepack:
+RUN corepack prepare --activate
+# 2. recommended way by corepack maintainers: RUN npm install -g corepack@latest -> RUN corepack install
+# 3. not synced with package manager version in package.json: RUN npm install -g pnpm@<version>
+# Refs: https://github.com/pnpm/pnpm/issues/9029#issuecomment-2630882497 https://github.com/pnpm/pnpm/issues/9029#issuecomment-2629817478
 
 COPY pnpm-lock.yaml ./
 
