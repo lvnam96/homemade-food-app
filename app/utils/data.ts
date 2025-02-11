@@ -1,4 +1,6 @@
 import _intersectionWith from 'lodash.intersectionwith';
+import type { JsonCompatible } from './types';
+import { convertDateToTimestamp } from './date';
 
 export { default as checkIsEqual } from 'fast-deep-equal';
 
@@ -270,23 +272,9 @@ export const validateInstance = <T extends FunctionConstructor>(
   return object;
 };
 
-export const convertDateToTimestamp = (date: Date) => {
-  if (!(date instanceof Date)) {
-    throw new Error('Date must be an instance of Date');
-  }
-  return Math.floor(date.getTime() / 1000);
-};
-
-export const convertTimestampToDate = (timestamp: number) => {
-  if (!Number.isFinite(timestamp)) {
-    throw new Error('Timestamp must be a finite number');
-  }
-  return new Date(timestamp * 1000);
-};
-
-export const makeDatePropsJsonCompatible = <T extends Record<string, any>>(
+export const makeObjectPropsJsonCompatible = <T extends Record<string, any>>(
   obj: T,
-): Record<string, JSONValue> | null => {
+): T extends null ? null : JsonCompatible<T> => {
   if (obj === null) {
     return obj;
   }
@@ -297,14 +285,20 @@ export const makeDatePropsJsonCompatible = <T extends Record<string, any>>(
 
   const newObj: Record<string, JSONValue> = { ...obj };
   Object.keys(newObj).forEach((key) => {
-    const value = newObj[key];
+    const value = obj[key]; // NOTE: must get value of type `any` from original object, not `newObj` since `newObj`'s props' types are `JSONValue` & cannot be narrowed down to `Date` or `bigint`
+
     if (value instanceof Date) {
       newObj[key] = convertDateToTimestamp(value);
+    } else if (typeof value === 'bigint') {
+      newObj[key] = value.toString();
     } else if (checkIsObjectLike(value)) {
-      newObj[key] = makeDatePropsJsonCompatible(value);
+      newObj[key] = makeObjectPropsJsonCompatible(value);
+    } else if (Array.isArray(value)) {
+      newObj[key] = value.map((item) => makeObjectPropsJsonCompatible(item));
     }
   });
-  return newObj;
+
+  return newObj as ReturnType<typeof makeObjectPropsJsonCompatible>;
 };
 
 /**

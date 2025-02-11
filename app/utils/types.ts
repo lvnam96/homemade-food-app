@@ -32,12 +32,35 @@ export type Writeable<T> = { -readonly [P in keyof T]: T[P] };
  * @link https://stackoverflow.com/a/43001581/5805244
  */
 export type DeepWriteable<T> = { -readonly [P in keyof T]: DeepWriteable<T[P]> };
+/**
+ * Make object to deep readonly
+ */
+export type DeepReadonly<T> = {
+  readonly [P in keyof T]: T[P] extends object ? DeepReadonly<T[P]> : T[P];
+};
 
 /**
  * @link https://stackoverflow.com/a/71525485/5805244
  */
 export type ArrayToTuple<T extends ReadonlyArray<string>, V = string> = keyof {
   [K in T extends ReadonlyArray<infer U> ? U : never]: V;
+};
+
+/**
+ * Folows result of `toJSON` method from `@adllang/jsonbinding`. This is meant to be used as the return type of `makeDatePropsJsonCompatible()` (see `./data` utils)
+ */
+export type JsonCompatible<T extends object> = {
+  [K in keyof T]: T[K] extends Nullable<Date>
+    ? T[K] extends Date
+      ? Timestamp
+      : Nullable<Timestamp>
+    : T[K] extends Nullable<bigint>
+      ? T[K] extends bigint
+        ? string
+        : Nullable<string>
+      : T[K] extends object
+        ? JsonCompatible<T[K]>
+        : T[K];
 };
 
 // export type MockedFn<T extends (...args: any) => any> = import('vitest').Mock<T>;
