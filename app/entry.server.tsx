@@ -12,7 +12,7 @@ import { RemixServer } from '@remix-run/react';
 import { isbot } from 'isbot';
 import { renderToPipeableStream } from 'react-dom/server';
 import { wrapHandleErrorWithSentry, init } from '@sentry/remix';
-import '~/services/import-env.server';
+import '~/.server/utils/import-env';
 
 init({
   dsn: process.env.PUBLIC_SENTRY_DSN,

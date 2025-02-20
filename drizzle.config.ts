@@ -1,6 +1,6 @@
 import { defineConfig } from 'drizzle-kit';
 import invariant from 'tiny-invariant';
-import '~/services/import-env.server';
+import '~/.server/utils/import-env';
 
 invariant(process.env.DATABASE_URL, 'DATABASE_URL is not set');
 

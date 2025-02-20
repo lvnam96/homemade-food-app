@@ -1,5 +1,5 @@
 import { compare as bcryptCompare, hash as bcryptHash } from 'bcrypt';
-import { getStrongCryptoRandomStr } from '~/utils/random.server';
+import { getStrongCryptoRandomStr } from './random';
 // import forge from 'node-forge';
 
 // const globalPepper = '<special_chars_here>'; // also used for AES256, should save it in a .key file or database

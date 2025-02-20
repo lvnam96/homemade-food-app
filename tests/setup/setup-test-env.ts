@@ -1,4 +1,4 @@
-import '~/services/import-env.server.ts';
+import '~/.server/utils/import-env';
 // we need these to be imported first 👆
 
 import { cleanup } from '@testing-library/react';

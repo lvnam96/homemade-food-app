@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { signJwt, verifyJwt } from './jwt.server';
+import { signJwt, verifyJwt } from './jwt';
 import { generateKeyPair, randomBytes, type KeyObject } from 'node:crypto';
 describe('JWT utils', () => {
   it('should work for RS family of algorithms', async () => {

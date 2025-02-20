@@ -8,7 +8,7 @@ import { neonConfig } from '@neondatabase/serverless';
 import { drizzle as neonDrizzle } from 'drizzle-orm/neon-http';
 import invariant from 'tiny-invariant';
 
-import '~/services/import-env.server';
+import '~/.server/utils/import-env';
 
 invariant(process.env.DATABASE_URL, 'DATABASE_URL is not set');
 const connectionString = process.env.DATABASE_URL;

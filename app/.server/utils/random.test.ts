@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getStrongCryptoRandomStr } from './random.server';
+import { getStrongCryptoRandomStr } from './random';
 
 describe('getStrongCryptoRandomStr()', () => {
   it('should generate random string', async () => {
