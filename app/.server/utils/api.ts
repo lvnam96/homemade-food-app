@@ -1,7 +1,4 @@
-import { decodeToken } from '~/utils/token';
-import { SignJWT, type JWTPayload, type ProduceJWT } from 'jose';
 import { apiErrorCodes, type ApiResponseError, type ApiResponseSuccess } from '~/services/api';
-import invariant from 'tiny-invariant';
 
 export const wrapResponseBody = <T extends JSONValue = JSONValue>(
   data: T,
@@ -24,118 +21,110 @@ export const wrapResponseError = (
   links: null,
 });
 
-export const getBearerToken = ({ request }: { request: Request }) =>
-  request.headers.get('Authorization')?.substring('Bearer '.length);
+export const getBearerTokenFromAuthHeader = (authHeader: string) => authHeader.substring('Bearer '.length) || null;
 
-export const authRequest = ({ request }: { request: Request }) => {
-  const accessToken = getBearerToken({ request });
-  invariant(accessToken, 'Access token is required');
-  const tokenPayload = decodeToken<AccessTokenPayload>(accessToken);
-  if (!tokenPayload || typeof tokenPayload.user?.id !== 'number') throw new Error('Invalid access token');
-
-  return tokenPayload;
-};
+export const getErrorResponse = ({
+  code,
+  message,
+  status,
+  headers,
+}: {
+  code: string;
+  message: string;
+  status: number;
+  headers?: HeadersInit;
+}) =>
+  Response.json(
+    wrapResponseError([
+      {
+        code,
+        message,
+      },
+    ]),
+    { status, headers },
+  );
 
 export const unauthorizedError = {
   code: apiErrorCodes.UNAUTHORIZED,
   message: 'Unauthorized',
 };
 export const getUnauthorizedResponse = ({
-  code = unauthorizedError.code,
-  message = unauthorizedError.message,
-}: {
-  code?: string;
-  message?: string;
-} = unauthorizedError) =>
-  Response.json(
-    wrapResponseError([
-      {
-        code,
-        message,
-      },
-    ]),
-    { status: 401 },
-  );
+  code,
+  message,
+  status,
+  ...args
+}: Partial<Parameters<typeof getErrorResponse>[0]> = {}) =>
+  getErrorResponse({
+    code: code || unauthorizedError.code,
+    message: message || unauthorizedError.message,
+    status: status || 401,
+    ...args,
+  });
 
 export const forbiddenError = {
   code: apiErrorCodes.FORBIDDEN,
   message: 'Request is forbidden',
 };
 export const getForbiddenResponse = ({
-  code = forbiddenError.code,
-  message = forbiddenError.message,
-}: {
-  code?: string;
-  message?: string;
-} = forbiddenError) =>
-  Response.json(
-    wrapResponseError([
-      {
-        code,
-        message,
-      },
-    ]),
-    { status: 403 },
-  );
+  code,
+  message,
+  status,
+  ...args
+}: Partial<Parameters<typeof getErrorResponse>[0]> = {}) =>
+  getErrorResponse({
+    code: code || forbiddenError.code,
+    message: message || forbiddenError.message,
+    status: status || 403,
+    ...args,
+  });
 
 export const notFoundError = {
   code: apiErrorCodes.NOT_FOUND,
   message: 'Requested data is not found',
 };
 export const getNotFoundResponse = ({
-  code = notFoundError.code,
-  message = notFoundError.message,
-}: {
-  code?: string;
-  message?: string;
-} = notFoundError) =>
-  Response.json(
-    wrapResponseError([
-      {
-        code,
-        message,
-      },
-    ]),
-    { status: 404 },
-  );
+  code,
+  message,
+  status,
+  ...rest
+}: Partial<Parameters<typeof getErrorResponse>[0]> = {}) =>
+  getErrorResponse({
+    code: code || notFoundError.code,
+    message: message || notFoundError.message,
+    status: status || 404,
+    ...rest,
+  });
 
 export const badRequestError = {
   code: apiErrorCodes.BAD_REQUEST,
   message: 'Invalid request due to missing search parameters or invalid body value/format',
 };
 export const getBadRequestResponse = ({
-  code = badRequestError.code,
-  message = badRequestError.message,
-}: {
-  code?: string;
-  message?: string;
-} = badRequestError) =>
-  Response.json(
-    wrapResponseError([
-      {
-        code,
-        message,
-      },
-    ]),
-    { status: 400 },
-  );
+  code,
+  message,
+  status,
+  ...rest
+}: Partial<Parameters<typeof getErrorResponse>[0]> = {}) =>
+  getErrorResponse({
+    code: code || badRequestError.code,
+    message: message || badRequestError.message,
+    status: status || 400,
+    ...rest,
+  });
 
-const generateToken = async (
-  payload?: JWTPayload,
-  expirationTime: Parameters<ProduceJWT['setExpirationTime']>[0] = '1w',
-) =>
-  await new SignJWT(payload)
-    .setProtectedHeader({ alg: 'HS256' })
-    .setIssuedAt()
-    .setExpirationTime(expirationTime)
-    .sign(new TextEncoder().encode(import.meta.env.PUBLIC_JWT_SECRET));
-
-export const generateAccessToken = async (
-  payload: AccessTokenPayload,
-  expirationTime?: Parameters<typeof generateToken>[1],
-) => await generateToken({ payload, type: 'access_token' }, expirationTime || '1d');
-
-export const generateRefreshToken = async (
-  payload: RefreshTokenPayload,
-  expirationTime?: Parameters<typeof generateToken>[1],
-) => await generateToken({ payload, type: 'refresh_token' }, expirationTime || '30d');
+export const generalServerError = {
+  code: apiErrorCodes.UNKNOWN_ERROR,
+  message: 'Unknown server error',
+};
+export const getGeneralServerErrorResponse = ({
+  code,
+  message,
+  status,
+  ...rest
+}: Partial<Parameters<typeof getErrorResponse>[0]> = {}) =>
+  getErrorResponse({
+    code: code || generalServerError.code,
+    message: message || generalServerError.message,
+    status: status || 500,
+    ...rest,
+  });

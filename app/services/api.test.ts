@@ -1,6 +1,5 @@
-/* eslint-disable no-new */
 import { describe, expect, it } from 'vitest';
-import { createApiInstance, parseLinkHeader } from './api';
+import { createApiInstance, generateAuthHeaderValue, parseLinkHeader } from './api';
 
 describe('createApiInstance()', () => {
   it('should provide a way to get the default instance', () => {
@@ -20,5 +19,11 @@ describe('parseLinkHeader()', () => {
     expect(parsedLinkHeader.lastPageIndex).toBe(2);
     expect(parsedLinkHeader.nextPageIndex).toBe(2);
     expect(parsedLinkHeader.prevPageIndex).toBe(null);
+  });
+});
+
+describe('generateAuthHeaderValue()', () => {
+  it('should generate bearer token as auth header value', () => {
+    expect(generateAuthHeaderValue('123456')).toBe('Bearer 123456');
   });
 });

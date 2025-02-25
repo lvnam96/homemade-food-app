@@ -2,7 +2,7 @@ import Api, { HTTPError, type KyInstance, type Options } from 'ky';
 import { assertGuard } from '~/utils/types';
 import { parseLinkHeader as plh } from '@web3-storage/parse-link-header';
 
-// export const API_ENDPOINT = process.env.API_ENDPOINT || 'https://api.food.lvnam.dev';
+// export const API_ENDPOINT = process.env.API_ENDPOINT;
 
 const apiBaseConfig = Object.freeze({
   // prefixUrl: checkIsBrowser() ? window.location.origin : API_ENDPOINT, // omitted due to we don't have seperate API endpoint server yet
@@ -24,9 +24,9 @@ export const checkIsApiError = <T = unknown>(err: unknown): err is HTTPError<T> 
   return !!err.request && !!err.response;
 };
 
-export const isNetworkError = (err: any) => !err.response && err?.request && !err.request?.status;
+export const checkIsNetworkError = (err: any) => !err.response && err?.request && !err.request?.status;
 
-export const getAuthHeaderValue = (token: string) => `Bearer ${token}`;
+export const generateAuthHeaderValue = (token: string) => `Bearer ${token}`;
 
 export const mergeSearchParams = (
   params: Record<string, string | number | boolean | null>,
@@ -47,7 +47,7 @@ export const mergeSearchParams = (
 /**
  * Generate helper to merge/combine multiple header objects into one (uses `.set()` (or `.append()`) so headers are (not) overridden)
  */
-const getMergeHeaders =
+const createMergeHeadersFunc =
   (
     {
       overrideDuplicate = false,
@@ -67,8 +67,8 @@ const getMergeHeaders =
     }
     return combinedHeaders;
   };
-export const mergeHeaders = getMergeHeaders({ overrideDuplicate: true });
-export const combineHeaders = getMergeHeaders({ overrideDuplicate: false });
+export const mergeHeaders = createMergeHeadersFunc({ overrideDuplicate: true });
+export const combineHeaders = createMergeHeadersFunc({ overrideDuplicate: false });
 
 export const parseLinkHeader = (res?: { headers?: { link?: string } }) => {
   const linkHeaderStringValue = res?.headers?.link;
@@ -140,10 +140,13 @@ export const apiErrorCodes = {
   FORBIDDEN: 'forbidden',
   NOT_FOUND: 'not_found',
   UNAUTHORIZED: 'unauthorized',
+  ANONYMOUS_REQUIRED: 'anonymous_required',
   INVALID_CREDENTIALS: 'invalid_credentials',
   INVALID_REQUEST_BODY: 'invalid_request_body',
   INVALID_REQUEST_PARAMS: 'invalid_request_params',
   UNKNOWN_ERROR: 'unknown_error',
+  INVALID_AUTH_TOKEN: 'invalid_auth_token',
+  INVALID_AUTH_TOKEN_TYPE: 'invalid_auth_token_type',
   INVALID_AUTH_CODE: 'invalid_auth_code',
   INVALID_USERNAME: 'invalid_username',
   INVALID_PASSWORD: 'invalid_password',

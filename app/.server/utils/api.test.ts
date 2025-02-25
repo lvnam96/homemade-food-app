@@ -1,5 +1,18 @@
 import { describe, expect, it } from 'vitest';
-import { getBearerToken, wrapResponseBody, wrapResponseError } from './api';
+import {
+  badRequestError,
+  generalServerError,
+  getBadRequestResponse,
+  getBearerTokenFromAuthHeader,
+  getForbiddenResponse,
+  getGeneralServerErrorResponse,
+  getNotFoundResponse,
+  getUnauthorizedResponse,
+  notFoundError,
+  unauthorizedError,
+  wrapResponseBody,
+  wrapResponseError,
+} from './api';
 
 describe('wrapResponseBody()', () => {
   const data = { id: 1 };
@@ -63,9 +76,103 @@ describe('wrapResponseError()', () => {
   });
 });
 
-describe('getBearerToken()', () => {
+describe('getBearerTokenFromAuthHeader()', () => {
   it('should work correctly', () => {
     const request = { headers: { get: () => 'Bearer jwt.token' } } as unknown as Request;
-    expect(getBearerToken({ request })).toEqual('jwt.token');
+    expect(getBearerTokenFromAuthHeader(request.headers.get('Authorization') || '')).toEqual('jwt.token');
+  });
+});
+
+describe('getUnauthorizedResponse()', () => {
+  it('should return response with 401 status code', async () => {
+    const res = getUnauthorizedResponse();
+    expect(res.status).toEqual(401);
+  });
+
+  it('should generate response with expected format', async () => {
+    const res = getUnauthorizedResponse();
+    const resBody = await res.json();
+    expect(resBody).toMatchObject({
+      data: null,
+      meta: null,
+      links: null,
+      errors: [
+        {
+          code: unauthorizedError.code,
+        },
+      ],
+    });
+  });
+});
+
+describe('getForbiddenResponse()', () => {
+  it('should return response with 403 status code', () => {
+    const res = getForbiddenResponse();
+    expect(res.status).toEqual(403);
+  });
+});
+describe('getNotFoundResponse()', () => {
+  it('should return response with 404 status code', async () => {
+    const res = getNotFoundResponse();
+    expect(res.status).toEqual(404);
+  });
+
+  it('should generate response with expected format', async () => {
+    const res = getNotFoundResponse();
+    const resBody = await res.json();
+    expect(resBody).toMatchObject({
+      data: null,
+      meta: null,
+      links: null,
+      errors: [
+        {
+          code: notFoundError.code,
+        },
+      ],
+    });
+  });
+});
+
+describe('getBadRequestResponse()', () => {
+  it('should return response with 400 status code', async () => {
+    const res = getBadRequestResponse();
+    expect(res.status).toEqual(400);
+  });
+
+  it('should generate response with expected format', async () => {
+    const res = getBadRequestResponse();
+    const resBody = await res.json();
+    expect(resBody).toMatchObject({
+      data: null,
+      meta: null,
+      links: null,
+      errors: [
+        {
+          code: badRequestError.code,
+        },
+      ],
+    });
+  });
+});
+
+describe('getGeneralServerErrorResponse()', () => {
+  it('should return response with 500 status code', async () => {
+    const res = getGeneralServerErrorResponse();
+    expect(res.status).toEqual(500);
+  });
+
+  it('should generate response with expected format', async () => {
+    const res = getGeneralServerErrorResponse();
+    const resBody = await res.json();
+    expect(resBody).toMatchObject({
+      data: null,
+      meta: null,
+      links: null,
+      errors: [
+        {
+          code: generalServerError.code,
+        },
+      ],
+    });
   });
 });
