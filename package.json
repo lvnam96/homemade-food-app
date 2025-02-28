@@ -44,7 +44,10 @@
     ]
   },
   "dependencies": {
+    "@adllang/jsonbinding": "^0.2.3",
+    "@epic-web/cachified": "^5.5.0",
     "@epic-web/remember": "^1.1.0",
+    "@epic-web/totp": "^4.0.1",
     "@hookform/resolvers": "^3.9.1",
     "@neondatabase/serverless": "^0.10.4",
     "@remix-run/node": "^2.15.2",
