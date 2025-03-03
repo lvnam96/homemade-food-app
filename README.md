@@ -1,4 +1,5 @@
 [![Better Stack Badge](https://uptime.betterstack.com/status-badges/v1/monitor/1omb5.svg)](https://uptime.betterstack.com/?utm_source=status_badge)
+[![codecov](https://codecov.io/github/lvnam96/homemade-food-app/graph/badge.svg?token=FMTEO3MGYC)](https://codecov.io/github/lvnam96/homemade-food-app)
 [![wakatime](https://wakatime.com/badge/user/627979e0-f793-4b0a-b22f-899fedaabd2e/project/ee423f4f-df27-4e49-bc46-fee69d5f44b7.svg)](https://wakatime.com/badge/user/627979e0-f793-4b0a-b22f-899fedaabd2e/project/ee423f4f-df27-4e49-bc46-fee69d5f44b7)
 
 ## Useful links
@@ -39,3 +40,29 @@ pnpm dev:down-vols
 # Remove services' containers only
 pnpm dev:down
 ```
+
+#### Docker containers:
+
+| Container name                 | Description                                                           |
+| ------------------------------ | --------------------------------------------------------------------- |
+| `homemade-food-dev.postgres`   | database service                                                      |
+| `homemade-food-dev.neon_proxy` | proxy service for local development (no connection to Neon DB server) |
+| `homemade-food-dev.remix`      | Remix dev server                                                      |
+| `homemade-food-dev.redis`      | Redis service                                                         |
+
+### Environment variables:
+
+| Variables              | Description                                                                               |
+| ---------------------- | ----------------------------------------------------------------------------------------- |
+| `POSTGRES_USER`        | User for connecting to database                                                           |
+| `POSTGRES_PASSWORD`    | Password for connecting to database                                                       |
+| `POSTGRES_DB`          | Database name                                                                             |
+| `DATABASE_URL`         | Used for DB connection; computed from `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` |
+| `PG_CONNECTION_STRING` | Same as `DATABASE_URL`; Used for `neon_proxy` Docker service                              |
+| `JWT_SECRET`           | Used for signing JWTs                                                                     |
+
+#### Usage:
+
+- Use `import '~/.server/utils/import-env'` & `process.env` to access private (server-only) variables (not prefixed with `PUBLIC_`).
+- Use `import.meta.env` to access public (client & server) variables (prefixed with `PUBLIC_`).
+- Remember to specify variables in [`./app/env.d.ts`](./app/env.d.ts) file.
