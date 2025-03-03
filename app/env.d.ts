@@ -5,16 +5,21 @@ type Timestamp = number;
 type DatetimeString = `${number}-${number}-${number}T${number}:${number}:${number}`;
 
 type TokenPayloadUserInfo = {
-  id: number;
-  // username: string;
+  id: string;
   email: string;
 };
 type TokenPayload = {
-  sessionId: number;
+  sessionId: string;
   user: TokenPayloadUserInfo;
 };
-type AccessTokenPayload = TokenPayload;
-type RefreshTokenPayload = TokenPayload;
+type AccessTokenPayload = {
+  payload: TokenPayload;
+  type: 'access_token';
+};
+type RefreshTokenPayload = {
+  payload: TokenPayload;
+  type: 'refresh_token';
+};
 
 interface Navigator {
   readonly standalone: boolean; // supported in chromium browers
