@@ -143,7 +143,7 @@ export const apiErrorCodes = {
   ANONYMOUS_REQUIRED: 'anonymous_required',
   INVALID_CREDENTIALS: 'invalid_credentials',
   INVALID_REQUEST_BODY: 'invalid_request_body',
-  INVALID_REQUEST_PARAMS: 'invalid_request_params',
+  INVALID_REQUEST_QUERY_PARAMS: 'invalid_request_query_params',
   UNKNOWN_ERROR: 'unknown_error',
   INVALID_AUTH_TOKEN: 'invalid_auth_token',
   INVALID_AUTH_TOKEN_TYPE: 'invalid_auth_token_type',
@@ -154,4 +154,4 @@ export const apiErrorCodes = {
   USERNAME_ALREADY_EXISTS: 'username_already_exists',
   EMAIL_ALREADY_EXISTS: 'email_already_exists',
   TOO_MANY_REQUESTS: 'too_many_requests',
-};
+} as const;
