@@ -1,0 +1,95 @@
+// import { Authenticator } from 'remix-auth';
+// import { type ProviderUser } from './providers/provider';
+import invariant from 'tiny-invariant';
+import { signJwt, verifyJwt } from '~/.server/utils/jwt';
+import { createUser, verifyUserPassword } from './models/user';
+import { createAuthSession, deleteAuthSessionById } from './models/session';
+import { makeObjectPropsJsonCompatible } from '~/utils/data';
+import type { UserCredentials, UserCredentialsForInsert, UserDataForInsert } from './types';
+import { getSaltedPassword, hashPassword } from '~/.server/utils/password';
+
+export * from './models/user';
+export * from './models/session';
+
+const ONE_MONTH_IN_MILISECONDS = 60 * 60 * 24 * 30;
+export const getSessionExpirationDate = () => new Date(Date.now() + ONE_MONTH_IN_MILISECONDS * 1000);
+
+export const generateAccessToken = (payload: AccessTokenPayload['payload'], expirationTime?: string | number | Date) =>
+  signJwt(
+    {
+      payload,
+      type: 'access_token',
+    },
+    { expirationTime: expirationTime || '1d' },
+  );
+
+export const generateRefreshToken = (
+  payload: RefreshTokenPayload['payload'],
+  expirationTime?: string | number | Date,
+) =>
+  signJwt(
+    {
+      payload,
+      type: 'refresh_token',
+    },
+    { expirationTime: expirationTime || '30d' },
+  );
+
+// export const authenticator = new Authenticator<ProviderUser>();
+
+export const signUserIn = async ({ email, password }: { email: UserCredentials['email']; password: string }) => {
+  invariant(email, 'Invalid credentials');
+  invariant(password, 'Invalid credentials');
+
+  const user = await verifyUserPassword(email, password);
+  if (!user) throw new Error('Invalid credentials');
+
+  const session = await createAuthSession({
+    userId: user.id.toString(),
+    expiredAt: getSessionExpirationDate(),
+  });
+  const jwtPayload = makeObjectPropsJsonCompatible({
+    sessionId: session.id,
+    user: {
+      id: user.id,
+      email: email,
+    },
+  });
+  return {
+    user: user,
+    session,
+    jwtPayload,
+  };
+};
+
+export const signUserOut = async (refreshToken: string) => {
+  // const authSession = await authSessionStorage.getSession(request.headers.get('cookie'));
+  // const sessionId = authSession.get(sessionIdKey);
+  const tokenPayload = await verifyJwt<RefreshTokenPayload>(refreshToken);
+
+  const sessionId = tokenPayload.payload.payload.sessionId;
+  const userId = tokenPayload.payload.payload.user.id;
+
+  if (sessionId) {
+    void (await deleteAuthSessionById(sessionId));
+  } else console.error('No auth session ID found. User ID:', userId);
+};
+
+export const signUserUp = async (
+  user: Pick<UserCredentialsForInsert, 'email' | 'password'> &
+    Omit<UserDataForInsert, 'createdAt' | 'updatedAt' | 'deletedAt'>,
+) => {
+  invariant(user, 'User data is required');
+  invariant(user.email, 'Email is required');
+  invariant(user.password, 'Password is required');
+  invariant(user.displayedName || user.email, 'Displayed name is required');
+
+  const { passwd, salt } = await getSaltedPassword(user.password);
+
+  return createUser({
+    ...user,
+    displayedName: user.displayedName || user.email,
+    salt,
+    password: await hashPassword(passwd),
+  });
+};
