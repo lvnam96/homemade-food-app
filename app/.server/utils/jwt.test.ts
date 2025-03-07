@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { signJwt, verifyJwt } from './jwt';
 import { generateKeyPair, randomBytes, type KeyObject } from 'node:crypto';
+
 describe('JWT utils', () => {
   it('should work for RS family of algorithms', async () => {
     const { privateKey } = await new Promise<{ publicKey: KeyObject; privateKey: KeyObject }>((resolve, reject) => {
@@ -35,12 +36,12 @@ describe('JWT utils', () => {
     const token = await signJwt<{ bar: string }>(
       { bar: 'baz' },
       {
-        secret: new TextEncoder().encode(secret),
+        secret: Buffer.from(secret),
         algorithm: 'HS512',
       },
     );
     const parsed = await verifyJwt<{ bar: string }>(token, {
-      secret: new TextEncoder().encode(secret),
+      secret: Buffer.from(secret),
       algorithms: ['HS512'],
     });
     expect(parsed.payload.bar).toBe('baz');

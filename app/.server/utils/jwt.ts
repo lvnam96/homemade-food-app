@@ -9,6 +9,8 @@ import {
   type ProduceJWT,
 } from 'jose';
 
+import '~/.server/utils/import-env';
+
 export const signJwt = <T extends Record<string, any> = JWTPayload>(
   payload: T,
   {
@@ -28,7 +30,7 @@ export const signJwt = <T extends Record<string, any> = JWTPayload>(
     .setProtectedHeader({ alg: algorithm })
     .setIssuedAt()
     .setExpirationTime(expirationTime)
-    .sign(secret || new TextEncoder().encode(import.meta.env.PUBLIC_JWT_SECRET));
+    .sign(secret || Buffer.from(process.env.JWT_SECRET));
 
 export const verifyJwt = <T extends Record<string, any> = JWTPayload>(
   token: Parameters<typeof jwtVerify>[0],
@@ -39,7 +41,7 @@ export const verifyJwt = <T extends Record<string, any> = JWTPayload>(
     secret?: KeyLike | Uint8Array;
   } = {},
 ): Promise<JWTVerifyResult<T>> =>
-  jwtVerify<T>(token, secret || new TextEncoder().encode(import.meta.env.PUBLIC_JWT_SECRET), {
+  jwtVerify<T>(token, secret || Buffer.from(process.env.JWT_SECRET), {
     algorithms: ['RS256', 'HS256'],
     ...options,
   });
