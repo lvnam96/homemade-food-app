@@ -16,14 +16,14 @@ export const signJwt = <T extends Record<string, any> = JWTPayload>(
   {
     secret,
     expirationTime = '1w',
-    algorithm = 'HS256', // need to be changed to RS256 to meet Google requirement
+    algorithm = 'HS512',
   }: {
     secret?: Parameters<SignJWT['sign']>[0];
     expirationTime?: Parameters<ProduceJWT['setExpirationTime']>[0];
     algorithm?: JWTHeaderParameters['alg'];
   } = {
     expirationTime: '1w',
-    algorithm: 'HS256',
+    algorithm: 'HS512',
   },
 ): Promise<string> =>
   new SignJWT(payload)
@@ -42,6 +42,6 @@ export const verifyJwt = <T extends Record<string, any> = JWTPayload>(
   } = {},
 ): Promise<JWTVerifyResult<T>> =>
   jwtVerify<T>(token, secret || Buffer.from(process.env.JWT_SECRET), {
-    algorithms: ['RS256', 'HS256'],
+    algorithms: ['HS512', 'RS512'],
     ...options,
   });
