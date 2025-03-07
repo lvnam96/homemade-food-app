@@ -4,7 +4,6 @@ import {
   getBadRequestResponse,
   getBearerTokenFromAuthHeader,
   getForbiddenResponse,
-  getGeneralServerErrorResponse,
   getUnauthorizedResponse,
 } from '~/.server/utils/api';
 import { getAuthSessionById } from '~/.server/modules/auth';
@@ -14,12 +13,8 @@ import type { MaybePromise, Nullishable } from '~/utils/types';
 import { parseFormData, type FileUploadHandler } from '@mjackson/form-data-parser';
 
 const getRequestBearerToken = (authHeader: string | null) => {
-  try {
-    const token = getBearerTokenFromAuthHeader(authHeader || '');
-    return token;
-  } catch (err) {
-    throw getGeneralServerErrorResponse();
-  }
+  const token = getBearerTokenFromAuthHeader(authHeader || '');
+  return token;
 };
 
 const getRequestBearerTokenData = async <
@@ -28,12 +23,8 @@ const getRequestBearerTokenData = async <
 >(
   token: T,
 ): Promise<T extends null ? null : JWTVerifyResult<P>> => {
-  try {
-    if (token) return verifyJwt<P>(token) as Promise<T extends null ? null : JWTVerifyResult<P>>;
-    return null as unknown as Promise<T extends null ? null : JWTVerifyResult<P>>;
-  } catch (err) {
-    throw getGeneralServerErrorResponse();
-  }
+  if (token) return verifyJwt<P>(token) as Promise<T extends null ? null : JWTVerifyResult<P>>;
+  return null as unknown as Promise<T extends null ? null : JWTVerifyResult<P>>;
 };
 
 export const getRequestData = async <P extends AccessTokenPayload | RefreshTokenPayload>({
@@ -42,16 +33,12 @@ export const getRequestData = async <P extends AccessTokenPayload | RefreshToken
   token: string | null;
   tokenPayload: JWTVerifyResult<P>['payload'] | null;
 }> => {
-  try {
-    const token = getRequestBearerToken(request.headers.get('Authorization'));
-    const jwtVerifyResult = await getRequestBearerTokenData<P>(token);
-    return {
-      token,
-      tokenPayload: jwtVerifyResult?.payload ?? null,
-    };
-  } catch (err) {
-    throw getGeneralServerErrorResponse();
-  }
+  const token = getRequestBearerToken(request.headers.get('Authorization'));
+  const jwtVerifyResult = await getRequestBearerTokenData<P>(token);
+  return {
+    token,
+    tokenPayload: jwtVerifyResult?.payload ?? null,
+  };
 };
 
 export const requireAuthenticatedUser = async ({ request }: Pick<ActionFunctionArgs, 'request'>) => {
@@ -65,15 +52,11 @@ export const requireAuthenticatedUser = async ({ request }: Pick<ActionFunctionA
 };
 
 export const requireAnonymousUser = async ({ request }: Pick<ActionFunctionArgs, 'request'>) => {
-  try {
-    const { tokenPayload } = await getRequestData({ request });
+  const { tokenPayload } = await getRequestData({ request });
 
-    const sessionId = tokenPayload?.payload?.sessionId;
-    if (sessionId && (await getAuthSessionById(sessionId))?.userId?.toString() === tokenPayload.payload?.user.id)
-      throw getForbiddenResponse({ code: apiErrorCodes.ANONYMOUS_REQUIRED });
-  } catch (err) {
-    throw getGeneralServerErrorResponse();
-  }
+  const sessionId = tokenPayload?.payload?.sessionId;
+  if (sessionId && (await getAuthSessionById(sessionId))?.userId?.toString() === tokenPayload.payload?.user.id)
+    throw getForbiddenResponse({ code: apiErrorCodes.ANONYMOUS_REQUIRED });
 };
 
 export const requireValidTokenPayload = async <
@@ -90,13 +73,9 @@ export const requireValidTokenPayload = async <
 }: {
   tokenPayload: T | null;
 }): Promise<void> => {
-  try {
-    const sessionId = tokenPayload?.payload?.sessionId;
-    if (!sessionId || (await getAuthSessionById(sessionId))?.userId?.toString() !== tokenPayload.payload?.user.id)
-      throw getUnauthorizedResponse({ code: apiErrorCodes.INVALID_AUTH_TOKEN });
-  } catch (err) {
-    throw getGeneralServerErrorResponse();
-  }
+  const sessionId = tokenPayload?.payload?.sessionId;
+  if (!sessionId || (await getAuthSessionById(sessionId))?.userId?.toString() !== tokenPayload.payload?.user.id)
+    throw getUnauthorizedResponse({ code: apiErrorCodes.INVALID_AUTH_TOKEN });
 };
 
 export const requireValidTokenType = ({

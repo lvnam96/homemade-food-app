@@ -30,7 +30,7 @@ export const action = async (actionArgs: ActionFunctionArgs) => {
     } catch (err) {
       if (err instanceof Response) throw err;
       console.error(err);
-      return getBadRequestResponse();
+      return getGeneralServerErrorResponse();
     }
   } else if (request.method === 'POST' && action === 'signin') {
     try {

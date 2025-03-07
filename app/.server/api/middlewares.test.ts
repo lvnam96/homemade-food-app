@@ -27,9 +27,8 @@ afterAll(() => {
 });
 
 const validAccessToken =
-  'eyJhbGciOiJIUzI1NiJ9.eyJwYXlsb2FkIjp7InNlc3Npb25JZCI6IjI5IiwidXNlciI6eyJpZCI6IjIxIiwiZW1haWwiOiJuaDBrdmpwcDB5Ymg2QGdtYWlsLmNvbSJ9fSwidHlwZSI6ImFjY2Vzc190b2tlbiIsImlhdCI6MTc0MDkwOTg3MywiZXhwIjoxNzQwOTk2MjczfQ.UBp-u9aeafMjML0sENOP0uGGDdgwGytOg-zPG2LUUEA';
-// const validRefreshToken =
-//   'eyJhbGciOiJIUzI1NiJ9.eyJwYXlsb2FkIjp7InNlc3Npb25JZCI6IjI5IiwidXNlciI6eyJpZCI6IjIxIiwiZW1haWwiOiJuaDBrdmpwcDB5Ymg2QGdtYWlsLmNvbSJ9fSwidHlwZSI6InJlZnJlc2hfdG9rZW4iLCJpYXQiOjE3NDA5MDk4NzMsImV4cCI6MTc0MzUwMTg3M30.aR24q5WTJawLu58iEaLSSRxDJ2DuI4sgaHvIjf1OBdU';
+  'eyJhbGciOiJIUzUxMiJ9.eyJwYXlsb2FkIjp7InNlc3Npb25JZCI6IjM5IiwidXNlciI6eyJpZCI6IjIxIiwiZW1haWwiOiJleGFtcGxlQGdtYWlsLmNvbSJ9fSwidHlwZSI6ImFjY2Vzc190b2tlbiIsImF6cCI6Imh0dHA6Ly9sb2NhbGhvc3Q6NTE3MyIsImlhdCI6MTc0MTM1ODgxMSwiZXhwIjo0ODY1NTYxMjExfQ.jZ91vx6eX6wxMg6sCsbJvKlY4DoYoQJ5Vk26OIwYPBgunInBVhyjkwqSvFCyz_e5Vxm4vn_N3HcVpOpRopa-OA';
+// const validRefreshToken = 'eyJhbGciOiJIUzUxMiJ9.eyJwYXlsb2FkIjp7InNlc3Npb25JZCI6IjM5IiwidXNlciI6eyJpZCI6IjIxIiwiZW1haWwiOiJleGFtcGxlQGdtYWlsLmNvbSJ9fSwidHlwZSI6InJlZnJlc2hfdG9rZW4iLCJhenAiOiJodHRwOi8vbG9jYWxob3N0OjUxNzMiLCJpYXQiOjE3NDEzNTg4NTgsImV4cCI6NDg2NTU2MTI1OH0.VLSnEvdTWscsmhhFUgP1XLVKEF7rpvJsXbMVrB_PEQQDVO71VfLcyNeFZhJIZv979oSKQENurSz2LBtLuceM8g';
 
 describe('getRequestData()', () => {
   it('should return token and tokenPayload', async () => {
@@ -54,7 +53,7 @@ describe('getRequestData()', () => {
 describe('requireAuthenticatedUser()', () => {
   it('should do nothing if user is authenticated', async () => {
     const existingSession: Awaited<ReturnType<typeof getAuthSessionById>> = {
-      id: BigInt('29'),
+      id: BigInt('39'),
       userId: BigInt('21'),
       createdAt: new Date(),
       expiredAt: new Date(),
@@ -74,6 +73,7 @@ describe('requireAuthenticatedUser()', () => {
   });
 
   it('should throw Response object if user is not authenticated', async () => {
+    // Expect error to be thrown when verifying token fails:
     await expect(
       requireAuthenticatedUser({
         request: new Request('https://example.com', {
@@ -82,7 +82,7 @@ describe('requireAuthenticatedUser()', () => {
           }),
         }),
       }),
-    ).rejects.toThrow(Response);
+    ).rejects.toThrow(Error);
   });
 });
 
@@ -98,6 +98,7 @@ describe('requireAnonymousUser()', () => {
   it('should throw Response object if user request is sent with any bearer token, not matter valid or invalid', async () => {
     if (vi.isMockFunction(getAuthSessionById)) getAuthSessionById.mockImplementation(() => undefined);
 
+    // Expect error to be thrown when verifying token fails:
     await expect(
       requireAnonymousUser({
         request: new Request('https://example.com', {
@@ -106,10 +107,10 @@ describe('requireAnonymousUser()', () => {
           }),
         }),
       }),
-    ).rejects.toThrow(Response);
+    ).rejects.toThrow(Error);
 
     const existingSession: Awaited<ReturnType<typeof getAuthSessionById>> = {
-      id: BigInt('29'),
+      id: BigInt('39'),
       userId: BigInt('21'),
       createdAt: new Date(),
       expiredAt: new Date(),
