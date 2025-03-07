@@ -8,11 +8,12 @@ import {
   type KeyLike,
   type ProduceJWT,
 } from 'jose';
+import { checkIsPlainObject } from '~/utils/data';
 
 import '~/.server/utils/import-env';
 
-export const signJwt = <T extends Record<string, any> = JWTPayload>(
-  payload: T,
+export const signJwt = (
+  payload: Record<string, JSONValue> & JWTPayload,
   {
     secret,
     expirationTime = '1w',
@@ -25,12 +26,14 @@ export const signJwt = <T extends Record<string, any> = JWTPayload>(
     expirationTime: '1w',
     algorithm: 'HS512',
   },
-): Promise<string> =>
-  new SignJWT(payload)
+) => {
+  if (!checkIsPlainObject(payload)) throw new Error('Payload must be an object');
+  return new SignJWT(payload)
     .setProtectedHeader({ alg: algorithm })
     .setIssuedAt()
     .setExpirationTime(expirationTime)
     .sign(secret || Buffer.from(process.env.JWT_SECRET));
+};
 
 export const verifyJwt = <T extends Record<string, any> = JWTPayload>(
   token: Parameters<typeof jwtVerify>[0],

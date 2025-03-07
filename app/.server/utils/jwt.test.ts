@@ -17,7 +17,7 @@ describe('JWT utils', () => {
       );
     });
 
-    const token = await signJwt<{ bar: string }>(
+    const token = await signJwt(
       { bar: 'foo' },
       {
         secret: privateKey,
@@ -33,7 +33,7 @@ describe('JWT utils', () => {
 
   it('should work for HS family of algorithms', async () => {
     const secret = randomBytes(64).toString('hex');
-    const token = await signJwt<{ bar: string }>(
+    const token = await signJwt(
       { bar: 'baz' },
       {
         secret: Buffer.from(secret),
@@ -45,5 +45,30 @@ describe('JWT utils', () => {
       algorithms: ['HS512'],
     });
     expect(parsed.payload.bar).toBe('baz');
+  });
+});
+
+describe('verifyJwt()', () => {
+  it('should throw if token is invalid', async () => {
+    await expect(verifyJwt('invalid')).rejects.toThrow();
+  });
+});
+
+describe('signJwt()', () => {
+  it('should return valid JWT as string', async () => {
+    const token = await signJwt({ bar: 'foo' });
+    expect(typeof token === 'string').toBe(true);
+
+    const parsed = await verifyJwt<{ bar: string }>(token);
+    expect(parsed.payload.bar).toBe('foo');
+  });
+
+  it('should throw when payload is invalid', async () => {
+    // @ts-expect-error Testing invalid argument
+    expect(() => signJwt('undefined')).toThrow();
+    // @ts-expect-error Testing invalid argument
+    expect(() => signJwt(undefined)).toThrow();
+    // @ts-expect-error Testing invalid argument
+    expect(() => signJwt(null)).toThrow();
   });
 });
