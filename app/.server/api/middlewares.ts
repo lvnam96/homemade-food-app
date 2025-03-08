@@ -6,7 +6,7 @@ import {
   getForbiddenResponse,
   getUnauthorizedResponse,
 } from '~/.server/utils/api';
-import { getAuthSessionById } from '~/.server/modules/auth';
+import { checkIsValidSessionInTokenPayload, verifyTokenClaims } from '~/.server/modules/auth';
 import { apiErrorCodes } from '~/services/api';
 import type { JWTVerifyResult } from 'jose';
 import type { MaybePromise, Nullishable } from '~/utils/types';
@@ -42,24 +42,26 @@ export const getRequestData = async <P extends AccessTokenPayload | RefreshToken
 };
 
 export const requireAuthenticatedUser = async ({ request }: Pick<ActionFunctionArgs, 'request'>) => {
-  const requestData = await getRequestData<AccessTokenPayload>({ request });
-  await requireValidTokenPayload({ tokenPayload: requestData.tokenPayload ?? null });
-  requireValidTokenType({
-    tokenType: requestData.tokenPayload?.type,
-    expectedTokenType: 'access_token',
-  });
-  return requestData;
+  const token = getRequestBearerToken(request.headers.get('Authorization'));
+  if (!token)
+    throw getUnauthorizedResponse({
+      code: apiErrorCodes.INVALID_AUTH_TOKEN,
+      message: 'Missing token',
+    });
+  const tokenPayload = await verifyTokenClaims(token);
+  await requireValidSessionInToken({ tokenPayload });
+
+  return { token, tokenPayload };
 };
 
 export const requireAnonymousUser = async ({ request }: Pick<ActionFunctionArgs, 'request'>) => {
   const { tokenPayload } = await getRequestData({ request });
 
-  const sessionId = tokenPayload?.payload?.sessionId;
-  if (sessionId && (await getAuthSessionById(sessionId))?.userId?.toString() === tokenPayload.payload?.user.id)
+  if (await checkIsValidSessionInTokenPayload({ tokenPayload }))
     throw getForbiddenResponse({ code: apiErrorCodes.ANONYMOUS_REQUIRED });
 };
 
-export const requireValidTokenPayload = async <
+export const requireValidSessionInToken = async <
   T extends {
     payload: {
       sessionId: TokenPayload['sessionId'];
@@ -73,8 +75,7 @@ export const requireValidTokenPayload = async <
 }: {
   tokenPayload: T | null;
 }): Promise<void> => {
-  const sessionId = tokenPayload?.payload?.sessionId;
-  if (!sessionId || (await getAuthSessionById(sessionId))?.userId?.toString() !== tokenPayload.payload?.user.id)
+  if (!(await checkIsValidSessionInTokenPayload({ tokenPayload })))
     throw getUnauthorizedResponse({ code: apiErrorCodes.INVALID_AUTH_TOKEN });
 };
 

@@ -52,14 +52,15 @@ pnpm dev:down
 
 ### Environment variables:
 
-| Variables              | Description                                                                               |
-| ---------------------- | ----------------------------------------------------------------------------------------- |
-| `POSTGRES_USER`        | User for connecting to database                                                           |
-| `POSTGRES_PASSWORD`    | Password for connecting to database                                                       |
-| `POSTGRES_DB`          | Database name                                                                             |
-| `DATABASE_URL`         | Used for DB connection; computed from `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` |
-| `PG_CONNECTION_STRING` | Same as `DATABASE_URL`; Used for `neon_proxy` Docker service                              |
-| `JWT_SECRET`           | Used for signing JWTs                                                                     |
+| Variables              | Description                                                  |
+| ---------------------- | ------------------------------------------------------------ |
+| `POSTGRES_USER`        | User for connecting to database                              |
+| `POSTGRES_PASSWORD`    | Password for connecting to database                          |
+| `POSTGRES_DB`          | Database name                                                |
+| `DATABASE_URL`         | Used for DB connection; computed from `POSTGRES_*` variables |
+| `PG_CONNECTION_STRING` | Same as `DATABASE_URL`; Used for `neon_proxy` Docker service |
+| `JWT_SECRET`           | Used for signing JWTs                                        |
+| `PUBLIC_ORIGIN`        | Current origin of the app                                    |
 
 #### Usage:
 

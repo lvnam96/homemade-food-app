@@ -46,6 +46,7 @@ namespace NodeJS {
 
 interface ImportMetaEnv {
   readonly PUBLIC_SENTRY_DSN: string;
+  readonly PUBLIC_ORIGIN: string;
 }
 
 interface Window {

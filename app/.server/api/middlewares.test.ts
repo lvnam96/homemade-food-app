@@ -7,13 +7,15 @@ import {
   requireJsonBody,
   requirePathParams,
   requireSearchParams,
-  requireValidTokenPayload,
+  requireValidSessionInToken,
   requireValidTokenType,
 } from './middlewares';
 import { getAuthSessionById } from '../modules/auth';
 
-vi.mock('../modules/auth/index.ts', () => {
+vi.mock('../modules/auth/index.ts', async (actual) => {
   return {
+    __esmodule: true,
+    ...((await actual()) as any),
     getAuthSessionById: vi.fn(),
   };
 });
@@ -129,7 +131,7 @@ describe('requireAnonymousUser()', () => {
   });
 });
 
-describe('requireValidTokenPayload()', () => {
+describe('requireValidSessionInToken()', () => {
   const existingSession: Awaited<ReturnType<typeof getAuthSessionById>> = {
     id: BigInt('1'),
     userId: BigInt('1'),
@@ -138,11 +140,11 @@ describe('requireValidTokenPayload()', () => {
     updatedAt: null,
   };
 
-  it('should do nothing if token is valid', async () => {
+  it('should do nothing if session is valid', async () => {
     if (vi.isMockFunction(getAuthSessionById)) getAuthSessionById.mockImplementation(() => existingSession);
 
     await expect(
-      requireValidTokenPayload({
+      requireValidSessionInToken({
         tokenPayload: {
           payload: {
             sessionId: '1',
