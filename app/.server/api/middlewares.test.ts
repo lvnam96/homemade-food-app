@@ -12,13 +12,16 @@ import {
 } from './middlewares';
 import { getAuthSessionById } from '../modules/auth';
 
-vi.mock('../modules/auth/index.ts', async (actual) => {
-  return {
-    __esmodule: true,
-    ...((await actual()) as any),
-    getAuthSessionById: vi.fn(),
-  };
-});
+vi.mock(
+  '../modules/auth/models/session.ts', // NOTE: must mock the actual module, not the re-exported one
+  async (actual) => {
+    return {
+      __esmodule: true,
+      ...((await actual()) as any),
+      getAuthSessionById: vi.fn(),
+    };
+  },
+);
 
 afterEach(() => {
   vi.resetAllMocks();
