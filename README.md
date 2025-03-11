@@ -41,7 +41,7 @@ pnpm dev:down-vols
 pnpm dev:down
 ```
 
-#### Docker containers:
+### Docker containers
 
 | Container name                 | Description                                                           |
 | ------------------------------ | --------------------------------------------------------------------- |
@@ -50,7 +50,7 @@ pnpm dev:down
 | `homemade-food-dev.remix`      | Remix dev server                                                      |
 | `homemade-food-dev.redis`      | Redis service                                                         |
 
-### Environment variables:
+### Environment variables
 
 | Variables              | Description                                                  |
 | ---------------------- | ------------------------------------------------------------ |
@@ -62,7 +62,7 @@ pnpm dev:down
 | `JWT_SECRET`           | Used for signing JWTs                                        |
 | `PUBLIC_ORIGIN`        | Current origin of the app                                    |
 
-#### Usage:
+#### Usage
 
 - Use `import '~/.server/utils/import-env'` & `process.env` to access private (server-only) variables (not prefixed with `PUBLIC_`).
 - Use `import.meta.env` to access public (client & server) variables (prefixed with `PUBLIC_`).
