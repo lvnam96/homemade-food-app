@@ -17,7 +17,7 @@ export const getAuthSessionById = async (
   // `SELECT * FROM ${authSessionsInHf} WHERE ${authSessionsInHf.id} = ${id}`
   (
     await dbInstance
-      .selectDistinct()
+      .select()
       .from(authSessionsInHf)
       .where(and(eq(authSessionsInHf.id, BigInt(sessionId)), gt(authSessionsInHf.expiredAt, new Date())))
   )[0];

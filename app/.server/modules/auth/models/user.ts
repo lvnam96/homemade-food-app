@@ -119,9 +119,9 @@ export const verifyUserPassword = async (
     return null;
   }
 
-  // `SELECT DISTINCT * FROM ${userCredentialsInHf} INNER JOIN ${usersInHf} on ${userCredentialsInHf.userId} = ${usersInHf.id} WHERE ${userCredentialsInHf.email} = ${email}`
+  // `SELECT * FROM ${userCredentialsInHf} INNER JOIN ${usersInHf} on ${userCredentialsInHf.userId} = ${usersInHf.id} WHERE ${userCredentialsInHf.email} = ${email}`
   const rows = await dbInstance
-    .selectDistinct()
+    .select()
     .from(userCredentialsInHf)
     .where(eq(userCredentialsInHf.email, normalizeEmail(email)))
     .innerJoin(usersInHf, eq(userCredentialsInHf.userId, usersInHf.id));
