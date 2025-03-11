@@ -33,10 +33,12 @@ export const getUserById = async (
   },
 ) =>
   // `SELECT * FROM ${usersInHf} WHERE ${usersInHf.id} = ${id}`
-  dbInstance
-    .select()
-    .from(usersInHf)
-    .where(eq(usersInHf.id, BigInt(id)));
+  (
+    await dbInstance
+      .select()
+      .from(usersInHf)
+      .where(eq(usersInHf.id, BigInt(id)))
+  )[0];
 
 // export const getUserByEmail = async (email: UserCredentials['email']) =>
 //   // `SELECT * FROM ${usersInHf} INNER JOIN ${userCredentialsInHf} ON ${usersInHf.id} = ${userCredentialsInHf.userId} WHERE ${userCredentialsInHf.email} = ${email}`
