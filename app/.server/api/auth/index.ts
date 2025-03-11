@@ -60,7 +60,7 @@ export const action = async (actionArgs: ActionFunctionArgs) => {
         tokenType: tokenPayload?.type,
       });
 
-      const refreshToken = getBearerTokenFromAuthHeader(request.headers.get('Authorization') || ''); // Bearer token
+      const refreshToken = getBearerTokenFromAuthHeader(request.headers.get('Authorization')); // Bearer token
       if (!refreshToken)
         throw getBadRequestResponse({
           code: apiErrorCodes.INVALID_AUTH_TOKEN,

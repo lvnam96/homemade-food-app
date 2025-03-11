@@ -1,4 +1,5 @@
 import { apiErrorCodes, type ApiResponseError, type ApiResponseSuccess } from '~/services/api';
+import type { Nullishable } from '~/utils/types';
 
 export const wrapResponseBody = <T extends JSONValue = JSONValue>(
   data: T,
@@ -21,7 +22,8 @@ export const wrapResponseError = (
   links: null,
 });
 
-export const getBearerTokenFromAuthHeader = (authHeader: string) => authHeader.substring('Bearer '.length) || null;
+export const getBearerTokenFromAuthHeader = (authHeader: Nullishable<string>) =>
+  authHeader?.substring?.('Bearer '.length) || null;
 
 export const getErrorResponse = ({
   code,

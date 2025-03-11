@@ -12,11 +12,6 @@ import type { JWTVerifyResult } from 'jose';
 import type { MaybePromise, Nullishable } from '~/utils/types';
 import { parseFormData, type FileUploadHandler } from '@mjackson/form-data-parser';
 
-const getRequestBearerToken = (authHeader: string | null) => {
-  const token = getBearerTokenFromAuthHeader(authHeader || '');
-  return token;
-};
-
 const getRequestBearerTokenData = async <
   P extends AccessTokenPayload | RefreshTokenPayload,
   T extends string | null = string | null,
@@ -33,7 +28,7 @@ export const getRequestData = async <P extends AccessTokenPayload | RefreshToken
   token: string | null;
   tokenPayload: JWTVerifyResult<P>['payload'] | null;
 }> => {
-  const token = getRequestBearerToken(request.headers.get('Authorization'));
+  const token = getBearerTokenFromAuthHeader(request.headers.get('Authorization'));
   const jwtVerifyResult = await getRequestBearerTokenData<P>(token);
   return {
     token,
@@ -42,7 +37,7 @@ export const getRequestData = async <P extends AccessTokenPayload | RefreshToken
 };
 
 export const requireAuthenticatedUser = async ({ request }: Pick<ActionFunctionArgs, 'request'>) => {
-  const token = getRequestBearerToken(request.headers.get('Authorization'));
+  const token = getBearerTokenFromAuthHeader(request.headers.get('Authorization'));
   if (!token)
     throw getUnauthorizedResponse({
       code: apiErrorCodes.INVALID_AUTH_TOKEN,

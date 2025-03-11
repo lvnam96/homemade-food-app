@@ -79,7 +79,12 @@ describe('wrapResponseError()', () => {
 describe('getBearerTokenFromAuthHeader()', () => {
   it('should work correctly', () => {
     const request = { headers: { get: () => 'Bearer jwt.token' } } as unknown as Request;
-    expect(getBearerTokenFromAuthHeader(request.headers.get('Authorization') || '')).toEqual('jwt.token');
+    expect(getBearerTokenFromAuthHeader(request.headers.get('Authorization'))).toEqual('jwt.token');
+  });
+
+  it('should handle nullish values', () => {
+    const request = { headers: { get: () => null } } as unknown as Request;
+    expect(getBearerTokenFromAuthHeader(request.headers.get('Authorization'))).toBeNull();
   });
 });
 
