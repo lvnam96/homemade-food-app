@@ -105,7 +105,9 @@ describe('toTimeOnlyISOString()', () => {
   });
 
   it('should return a valid ISO time-only string', () => {
-    expect(toTimeOnlyISOString(new Date()).match(/^[0-9]{2}:[0-9]{2}:[0-9]{2}[+-][0-9]{2}:[0-9]{2}$/)?.length).toBe(1);
+    expect(toTimeOnlyISOString(new Date()).match(/^[0-9]{2}:[0-9]{2}:[0-9]{2}(Z|[+-][0-9]{2}:[0-9]{2})$/)?.length).toBe(
+      2, // 2 parts in regexp: first one is time, second one is timezone offset (it will be `Z` for UTC+0)
+    );
   });
 });
 
