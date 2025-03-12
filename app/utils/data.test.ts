@@ -158,9 +158,7 @@ describe('checkIsEmpty()', () => {
   });
 
   it('should return false when object has prototype properties but no own properties', () => {
-    class Proto {
-      constructor() {}
-    }
+    class Proto {}
     // Proto.prototype.prop = 'value';
     const obj = new Proto();
     expect(checkIsEmpty(obj)).toBe(false);

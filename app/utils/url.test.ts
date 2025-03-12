@@ -1,16 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import { getQueryStringValue, joinPathWithParams, parseQueryString, stringifyQuery } from './url';
 
-const sampleQueryString = '?a=1&b=C&d=3&d=4';
+const sampleQueryString = '?a=1&b=C&d=3&d=4&d=5';
 const sampleQueryObjectToBeStringified = Object.freeze({
   a: 1, // support number
   b: 'C', // support string
-  d: [3, '4'], // support array of 2 types above
+  d: [3, '4', 5], // support array of 2 types above
 });
 const sampleParsedQuery = Object.freeze({
   a: '1',
   b: 'C',
-  d: ['3', '4'],
+  d: ['3', '4', '5'],
 });
 
 describe('joinPathWithParams()', () => {
@@ -98,20 +98,37 @@ describe('getQueryStringValue()', () => {
     testHandlingQueryString(sampleQueryString.substring(1));
   });
 
-  it('should return single value BY DEFAULT', () => {
-    const queryKey = 'd'; // test with multiple-values key
-    expect(getQueryStringValue(queryKey, sampleQueryString)).toBe(sampleParsedQuery[queryKey][0]);
+  describe('should return single value BY DEFAULT', () => {
+    it('should handle parsed query object', () => {
+      const queryKey = 'd'; // test with single-value key
+      expect(getQueryStringValue(queryKey, sampleParsedQuery)).toBe(sampleParsedQuery[queryKey][0]);
+      expect(
+        getQueryStringValue(queryKey, sampleParsedQuery, {
+          isSingle: true,
+        }),
+      ).toBe(sampleParsedQuery[queryKey][0]);
+    });
+
+    it('should handle query string', () => {
+      const queryKey = 'd'; // test with multiple-values key
+      expect(getQueryStringValue(queryKey, sampleQueryString)).toBe(sampleParsedQuery[queryKey][0]);
+      expect(
+        getQueryStringValue(queryKey, sampleQueryString, {
+          isSingle: true,
+        }),
+      ).toBe(sampleParsedQuery[queryKey][0]);
+    });
   });
 
   it('should return correct value if query key is duplicated in query string', () => {
     const queryKey: 'a' | 'b' | 'd' = 'd'; // test with multiple-values key
     expect(
       getQueryStringValue(queryKey, sampleQueryString, {
-        isSingle: true,
+        isSingle: false,
       }),
-    ).toBe(sampleParsedQuery[queryKey][0]);
+    ).toMatchObject(sampleParsedQuery[queryKey]);
     expect(
-      getQueryStringValue(queryKey, sampleQueryString, {
+      getQueryStringValue(queryKey, sampleParsedQuery, {
         isSingle: false,
       }),
     ).toMatchObject(sampleParsedQuery[queryKey]);
@@ -129,7 +146,16 @@ describe('getQueryStringValue()', () => {
   });
 
   it('should use return `null` when parsing empty query string (w/ or w/o `?` prefixed)', () => {
-    const queryKey = '';
+    let queryKey = '';
+    expect(getQueryStringValue(queryKey, '')).toBe(null);
+    expect(getQueryStringValue(queryKey, '?')).toBe(null);
+    expect(
+      getQueryStringValue(queryKey, '', {
+        isSingle: false,
+      }),
+    ).toBe(null);
+
+    queryKey = 'a';
     expect(getQueryStringValue(queryKey, '')).toBe(null);
     expect(getQueryStringValue(queryKey, '?')).toBe(null);
     expect(

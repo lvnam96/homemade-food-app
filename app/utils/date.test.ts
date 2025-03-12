@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { isValidDate, convertDateStringToTimestamp, convertDateToTimestamp, convertTimestampToDate } from './date';
+import {
+  isValidDate,
+  convertDateStringToTimestamp,
+  convertDateToTimestamp,
+  convertTimestampToDate,
+  toDateOnlyISOString,
+  toTimeOnlyISOString,
+  toDateTimeString,
+  removeTime,
+} from './date';
 
 describe('isValidDate()', () => {
   it('should return boolean', () => {
@@ -77,5 +86,50 @@ describe('convertTimestampToDate', () => {
   it('should throw an error if the argument is not a number', () => {
     // @ts-expect-error Testing invalid argument
     expect(() => convertTimestampToDate('2021-01-01T00:00:00.000Z')).toThrowError();
+  });
+});
+
+describe('toDateOnlyISOString()', () => {
+  it('should return a string', () => {
+    expect(typeof toDateOnlyISOString(new Date())).toBe('string');
+  });
+
+  it('should return a valid ISO date-only string', () => {
+    expect(toDateOnlyISOString(new Date()).match(/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/)?.length).toBe(1);
+  });
+});
+
+describe('toTimeOnlyISOString()', () => {
+  it('should return a string', () => {
+    expect(typeof toTimeOnlyISOString(new Date())).toBe('string');
+  });
+
+  it('should return a valid ISO time-only string', () => {
+    expect(toTimeOnlyISOString(new Date()).match(/^[0-9]{2}:[0-9]{2}:[0-9]{2}[+-][0-9]{2}:[0-9]{2}$/)?.length).toBe(1);
+  });
+});
+
+describe('toDateTimeString()', () => {
+  it('should return a string', () => {
+    expect(typeof toDateTimeString(new Date())).toBe('string');
+  });
+
+  it('should return a valid ISO datetime string', () => {
+    expect(
+      toDateTimeString(new Date()).match(/^[0-9]{2}:[0-9]{2}:[0-9]{2} [0-9]{2}\/[0-9]{2}\/[0-9]{4}$/)?.length,
+    ).toBe(1);
+  });
+});
+
+describe('removeTime()', () => {
+  it('should return a Date object', () => {
+    expect(removeTime(new Date()) instanceof Date).toBe(true);
+  });
+
+  it('should return a Date object without time', () => {
+    expect(removeTime(new Date()).getHours()).toBe(0);
+    expect(removeTime(new Date()).getMinutes()).toBe(0);
+    expect(removeTime(new Date()).getSeconds()).toBe(0);
+    expect(removeTime(new Date()).getMilliseconds()).toBe(0);
   });
 });

@@ -35,7 +35,7 @@ describe('comparePassword()', async () => {
 });
 
 describe('getSaltedPassword()', () => {
-  it('should add salt to the end of passwword', async () => {
+  it('should add salt to the end of password', async () => {
     const salt = 'abcd';
     const { passwd } = await getSaltedPassword(plainPasswd, salt);
     expect(passwd.indexOf(plainPasswd)).toBe(0);

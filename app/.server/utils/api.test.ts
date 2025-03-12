@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   badRequestError,
+  forbiddenError,
   generalServerError,
   getBadRequestResponse,
   getBearerTokenFromAuthHeader,
@@ -115,7 +116,23 @@ describe('getForbiddenResponse()', () => {
     const res = getForbiddenResponse();
     expect(res.status).toEqual(403);
   });
+
+  it('should generate response with expected format', async () => {
+    const res = getForbiddenResponse();
+    const resBody = await res.json();
+    expect(resBody).toMatchObject({
+      data: null,
+      meta: null,
+      links: null,
+      errors: [
+        {
+          code: forbiddenError.code,
+        },
+      ],
+    });
+  });
 });
+
 describe('getNotFoundResponse()', () => {
   it('should return response with 404 status code', async () => {
     const res = getNotFoundResponse();

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { generateAccessToken, getSessionExpirationDate } from './index';
+import { generateAccessToken, generateRefreshToken, getSessionExpirationDate } from './index';
 import { verifyJwt } from '~/.server/utils/jwt';
 
 describe('getSessionExpirationDate()', () => {
@@ -28,7 +28,7 @@ describe('generateAccessToken()', () => {
 
 describe('generateRefreshToken()', () => {
   it('should return JWT as string', async () => {
-    const token = await generateAccessToken({ sessionId: '1', user: { id: '1', email: '1' } });
+    const token = await generateRefreshToken({ sessionId: '1', user: { id: '1', email: '1' } });
     expect(typeof token).toBe('string');
     await expect(verifyJwt(token)).resolves.not.toThrow();
   });

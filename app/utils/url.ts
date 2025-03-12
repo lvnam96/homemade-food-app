@@ -8,10 +8,11 @@ export const joinPathWithParams = (path: string, params?: Parameters<typeof stri
   return `${path}${stringifyQuery(params)}`;
 };
 
+/* v8 ignore start */
 /**
  * @deprecated This is old implementation
  * @alias {@link stringifyQuery}
- *  */
+ */
 const _stringifyQuery = (
   obj?: ConstructorParameters<typeof URLSearchParams>[0],
   {
@@ -22,6 +23,7 @@ const _stringifyQuery = (
     appendQuestionMark: true,
   },
 ) => (appendQuestionMark ? '?' : '') + new URLSearchParams(obj).toString();
+/* v8 ignore stop */
 
 /**
  * NOTE: `query-string` is used instead of platform-specific API `new URLSearchParams().toString()` because `query-string` supports multiple values for the same key via an easy-to-read format (`Record<string, string[] | string>`) & ensures compatibility with NodeJS API `URLSearchParams` (Web API `URLSearchParams` supports only (`[string, string][]` format, see https://developer.mozilla.org/en-US/docs/Web/API/URLSearchParams/URLSearchParams#parameters)

@@ -10,7 +10,7 @@ import {
   requireValidSessionInToken,
   requireValidTokenType,
 } from './middlewares';
-import { getAuthSessionById } from '../modules/auth';
+import { generateAccessToken, getAuthSessionById } from '../modules/auth';
 
 vi.mock(
   '../modules/auth/models/session.ts', // NOTE: must mock the actual module, not the re-exported one
@@ -31,9 +31,10 @@ afterAll(() => {
   vi.restoreAllMocks();
 });
 
-const validAccessToken =
-  'eyJhbGciOiJIUzUxMiJ9.eyJwYXlsb2FkIjp7InNlc3Npb25JZCI6IjM5IiwidXNlciI6eyJpZCI6IjIxIiwiZW1haWwiOiJleGFtcGxlQGdtYWlsLmNvbSJ9fSwidHlwZSI6ImFjY2Vzc190b2tlbiIsImF6cCI6Imh0dHA6Ly9sb2NhbGhvc3Q6NTE3MyIsImlhdCI6MTc0MTM1ODgxMSwiZXhwIjo0ODY1NTYxMjExfQ.jZ91vx6eX6wxMg6sCsbJvKlY4DoYoQJ5Vk26OIwYPBgunInBVhyjkwqSvFCyz_e5Vxm4vn_N3HcVpOpRopa-OA';
-// const validRefreshToken = 'eyJhbGciOiJIUzUxMiJ9.eyJwYXlsb2FkIjp7InNlc3Npb25JZCI6IjM5IiwidXNlciI6eyJpZCI6IjIxIiwiZW1haWwiOiJleGFtcGxlQGdtYWlsLmNvbSJ9fSwidHlwZSI6InJlZnJlc2hfdG9rZW4iLCJhenAiOiJodHRwOi8vbG9jYWxob3N0OjUxNzMiLCJpYXQiOjE3NDEzNTg4NTgsImV4cCI6NDg2NTU2MTI1OH0.VLSnEvdTWscsmhhFUgP1XLVKEF7rpvJsXbMVrB_PEQQDVO71VfLcyNeFZhJIZv979oSKQENurSz2LBtLuceM8g';
+const validAccessToken = await generateAccessToken({
+  sessionId: '39',
+  user: { id: '21', email: 'example@gmail.com' },
+});
 
 describe('getRequestData()', () => {
   it('should return token and tokenPayload', async () => {
@@ -61,7 +62,7 @@ describe('requireAuthenticatedUser()', () => {
       id: BigInt('39'),
       userId: BigInt('21'),
       createdAt: new Date(),
-      expiredAt: new Date(),
+      expiredAt: new Date(2099, 0, 1),
       updatedAt: null,
     };
     if (vi.isMockFunction(getAuthSessionById)) getAuthSessionById.mockImplementation(() => existingSession);
@@ -118,7 +119,7 @@ describe('requireAnonymousUser()', () => {
       id: BigInt('39'),
       userId: BigInt('21'),
       createdAt: new Date(),
-      expiredAt: new Date(),
+      expiredAt: new Date(2099, 0, 1),
       updatedAt: null,
     };
     if (vi.isMockFunction(getAuthSessionById)) getAuthSessionById.mockImplementation(() => existingSession);
@@ -135,24 +136,23 @@ describe('requireAnonymousUser()', () => {
 });
 
 describe('requireValidSessionInToken()', () => {
-  const existingSession: Awaited<ReturnType<typeof getAuthSessionById>> = {
-    id: BigInt('1'),
-    userId: BigInt('1'),
-    createdAt: new Date(),
-    expiredAt: new Date(),
-    updatedAt: null,
-  };
-
   it('should do nothing if session is valid', async () => {
+    const existingSession: Awaited<ReturnType<typeof getAuthSessionById>> = {
+      id: BigInt('2'),
+      userId: BigInt('21'),
+      createdAt: new Date(),
+      expiredAt: new Date(2099, 0, 1),
+      updatedAt: null,
+    };
     if (vi.isMockFunction(getAuthSessionById)) getAuthSessionById.mockImplementation(() => existingSession);
 
     await expect(
       requireValidSessionInToken({
         tokenPayload: {
           payload: {
-            sessionId: '1',
+            sessionId: '2',
             user: {
-              id: '1',
+              id: '21',
             },
           },
           type: 'access_token',
