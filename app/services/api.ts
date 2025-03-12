@@ -128,7 +128,7 @@ export const assertResponseBody = <T extends JSONValue>(
     skipAssertData: false,
   },
 ): void => {
-  if (resBody.errors) {
+  if (resBody.errors && resBody.errors.length !== 0) {
     throw new Error(resBody.errors[0]?.message ?? 'Unknown error: ' + JSON.stringify(resBody.errors));
   } else if (!skipAssertData && !resBody.data) {
     throw new Error('Missing data');

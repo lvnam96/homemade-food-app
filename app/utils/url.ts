@@ -39,26 +39,26 @@ export const stringifyQuery = (
   },
 ) => (appendQuestionMark ? '?' : '') + qs.stringify(obj);
 
-export const parseQueryString = <T = string>(queryString: string): ParsedQuery<T> =>
+export const parseQueryString = (queryString: string): ParsedQuery =>
   typeof queryString === 'string' && queryString.length > 0
     ? Array.from(
         new URLSearchParams(queryString.startsWith('?') ? queryString.substring(1) : queryString).entries(),
-      ).reduce(
-        (obj, [key, val]) => {
-          const value = val || null; // value should fallback to `null` instead of empty string
-          // if key already exists, convert to array and append value:
-          const valueInParsedQueryObject = obj[key];
-          if (valueInParsedQueryObject)
-            return {
-              ...obj,
-              [key]: Array.isArray(valueInParsedQueryObject)
-                ? valueInParsedQueryObject.push(value)
-                : [valueInParsedQueryObject, value],
-            };
-          else return Object.assign(obj, { [key]: value });
-        },
-        {} as Record<string, any>,
-      )
+      ).reduce((obj, [key, val]) => {
+        const value = val || null; // value should fallback to `null` instead of empty string
+
+        if (!obj[key]) {
+          obj[key] = value;
+        } else if (value) {
+          // Any falsy values of duplicated key should be ignored in array format:
+          if (Array.isArray(obj[key])) {
+            obj[key].push(value);
+          } else {
+            obj[key] = [obj[key], value];
+          }
+        }
+
+        return obj;
+      }, {} as ParsedQuery)
     : {};
 
 export const getQueryStringValue = <T extends string | string[] = string | string[]>(
