@@ -67,6 +67,11 @@ jobs:
   unit-test:
     name: ⚡ Run Vitest and collect results
     runs-on: ubuntu-22.04
+    environment: Test
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      JWT_SECRET: ${{ secrets.JWT_SECRET }}
+      PUBLIC_ORIGIN: ${{ vars.PUBLIC_ORIGIN }}
     steps:
       - name: ⬇️ Checkout repo
         uses: actions/checkout@v4
@@ -86,7 +91,7 @@ jobs:
         run: pnpm install
 
       - name: ⚡ Run tests
-        run: pnpm run test --reporter=junit --outputFile=test-report.junit.xml
+        run: pnpm run test -- --reporter=junit --outputFile=test-report.junit.xml
 
       - name: 📊 Upload test results to Codecov
         if: ${{ !cancelled() }}
@@ -97,6 +102,7 @@ jobs:
   # playwright:
   #   name: 🎭 Playwright
   #   runs-on: ubuntu-22.04
+  #   environment: Test
   #   timeout-minutes: 60
   #   steps:
   #     - name: ⬇️ Checkout repo
