@@ -69,9 +69,9 @@ export const verifyTokenClaims = async (token: string) => {
 export const checkIsValidSessionInTokenPayload = async <
   T extends {
     payload: {
-      sessionId: TokenPayload['sessionId'];
+      sessionId: SharedJWTPayload['payload']['sessionId'];
       user: {
-        id: TokenPayload['user']['id'];
+        id: SharedJWTPayload['payload']['user']['id'];
       };
     };
   },

@@ -1,4 +1,4 @@
-import Api, { HTTPError, type KyInstance, type Options } from 'ky';
+import Api, { HTTPError, type Options } from 'ky';
 import { assertGuard } from '~/utils/types';
 import { parseLinkHeader as plh } from '@web3-storage/parse-link-header';
 
@@ -12,8 +12,7 @@ const apiBaseConfig = Object.freeze({
 
 const api = Api.create(apiBaseConfig);
 
-export const createApiInstance = (config?: Options, baseApiInstance: KyInstance = Api) =>
-  baseApiInstance.create(config);
+export const createApiInstance = (config?: Options) => (config === apiBaseConfig ? api : Api.create(config));
 
 export const getApiBaseConfig = () => apiBaseConfig;
 

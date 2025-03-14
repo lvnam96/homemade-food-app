@@ -27,7 +27,7 @@ export const getUserById = async (
   {
     dbInstance = db,
   }: {
-    dbInstance?: typeof db;
+    dbInstance?: typeof db | Parameters<Parameters<(typeof db)['transaction']>[0]>[0];
   } = {
     dbInstance: db,
   },
@@ -57,7 +57,7 @@ export const deleteUserByEmail = async (
   {
     dbInstance = db,
   }: {
-    dbInstance?: typeof db;
+    dbInstance?: typeof db | Parameters<Parameters<(typeof db)['transaction']>[0]>[0];
   } = {
     dbInstance: db,
   },
@@ -83,7 +83,7 @@ export const createUser = async (
   {
     dbInstance = db,
   }: {
-    dbInstance?: typeof db;
+    dbInstance?: typeof db | Parameters<Parameters<(typeof db)['transaction']>[0]>[0];
   } = {
     dbInstance: db,
   },
@@ -112,7 +112,7 @@ export const verifyUserPassword = async (
   {
     dbInstance = db,
   }: {
-    dbInstance?: typeof db;
+    dbInstance?: typeof db | Parameters<Parameters<(typeof db)['transaction']>[0]>[0];
   } = {
     dbInstance: db,
   },
@@ -139,15 +139,24 @@ export const verifyUserPassword = async (
   return user;
 };
 
-export const resetUserPassword = async ({
-  email,
-  password,
-}: {
-  email: UserCredentials['email'];
-  password: UserCredentials['password'];
-}) => {
+export const resetUserPassword = async (
+  {
+    email,
+    password,
+  }: {
+    email: UserCredentials['email'];
+    password: UserCredentials['password'];
+  },
+  {
+    dbInstance = db,
+  }: {
+    dbInstance?: typeof db | Parameters<Parameters<(typeof db)['transaction']>[0]>[0];
+  } = {
+    dbInstance: db,
+  },
+) => {
   const { passwd, salt } = await getSaltedPassword(password);
-  return db
+  return dbInstance
     .update(userCredentialsInHf)
     .set({
       salt,

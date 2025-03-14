@@ -56,20 +56,9 @@ export const requireAnonymousUser = async ({ request }: Pick<ActionFunctionArgs,
     throw getForbiddenResponse({ code: apiErrorCodes.ANONYMOUS_REQUIRED });
 };
 
-export const requireValidSessionInToken = async <
-  T extends {
-    payload: {
-      sessionId: TokenPayload['sessionId'];
-      user: {
-        id: TokenPayload['user']['id'];
-      };
-    };
-  },
->({
+export const requireValidSessionInToken = async ({
   tokenPayload,
-}: {
-  tokenPayload: T | null;
-}): Promise<void> => {
+}: Parameters<typeof checkIsValidSessionInTokenPayload>[0]) => {
   if (!(await checkIsValidSessionInTokenPayload({ tokenPayload })))
     throw getUnauthorizedResponse({ code: apiErrorCodes.INVALID_AUTH_TOKEN });
 };

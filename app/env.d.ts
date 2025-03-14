@@ -8,16 +8,23 @@ type TokenPayloadUserInfo = {
   id: string;
   email: string;
 };
-type TokenPayload = {
-  sessionId: string;
-  user: TokenPayloadUserInfo;
+type SharedJWTPayload = import('jose').JWTPayload & {
+  payload: {
+    sessionId: string;
+    user: TokenPayloadUserInfo;
+  };
+
+  /**
+   * JWT Authorized Party
+   *
+   * @see {@link https://clerk.com/docs/backend-requests/manual-jwt#verify-the-token-signature}
+   */
+  azp?: string;
 };
-type AccessTokenPayload = {
-  payload: TokenPayload;
+type AccessTokenPayload = SharedJWTPayload & {
   type: 'access_token';
 };
-type RefreshTokenPayload = {
-  payload: TokenPayload;
+type RefreshTokenPayload = SharedJWTPayload & {
   type: 'refresh_token';
 };
 
