@@ -27,21 +27,33 @@ export const checkIsNetworkError = (err: any) => !err.response && err?.request &
 
 export const generateAuthHeaderValue = (token: string) => `Bearer ${token}`;
 
-export const mergeSearchParams = (
-  params: Record<string, string | number | boolean | null>,
-  originalSearchParams: Options['searchParams'] = {},
-  override: boolean = false,
-): Options['searchParams'] => {
-  const searchParams = new URLSearchParams();
-  const writeParam = override ? searchParams.set : searchParams.append;
-  for (const [key, value] of Object.entries(params)) {
-    if (value !== null) writeParam.call(searchParams, key, String(value));
-  }
-  for (const [key, value] of Object.entries(originalSearchParams)) {
-    if (value !== null) writeParam.call(searchParams, key, String(value));
-  }
-  return searchParams;
-};
+const createMergeSearchParamsFunc =
+  (
+    {
+      overrideDuplicate = false,
+    }: {
+      overrideDuplicate?: boolean;
+    } = {
+      overrideDuplicate: false,
+    },
+  ) =>
+  (
+    params: Record<string, string | number | boolean | null>,
+    originalSearchParams: Options['searchParams'] = {},
+  ): Options['searchParams'] => {
+    const searchParams = new URLSearchParams();
+    const writeParam = overrideDuplicate ? searchParams.set : searchParams.append;
+    for (const [key, value] of Object.entries(params)) {
+      if (value !== null) writeParam.call(searchParams, key, String(value));
+    }
+    for (const [key, value] of Object.entries(originalSearchParams)) {
+      if (value !== null) writeParam.call(searchParams, key, String(value));
+    }
+    return searchParams;
+  };
+
+export const mergeSearchParams = createMergeSearchParamsFunc({ overrideDuplicate: true });
+export const combineSearchParams = createMergeSearchParamsFunc({ overrideDuplicate: false });
 
 /**
  * Generate helper to merge/combine multiple header objects into one (uses `.set()` (or `.append()`) so headers are (not) overridden)
