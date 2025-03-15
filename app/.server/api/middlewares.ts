@@ -37,13 +37,30 @@ export const getRequestData = async <P extends AccessTokenPayload | RefreshToken
 };
 
 export const requireAuthenticatedUser = async ({ request }: Pick<ActionFunctionArgs, 'request'>) => {
-  const token = getBearerTokenFromAuthHeader(request.headers.get('Authorization'));
+  const { token, tokenPayload } = await getRequestData({ request });
+
   if (!token)
     throw getUnauthorizedResponse({
       code: apiErrorCodes.INVALID_AUTH_TOKEN,
       message: 'Missing token',
     });
-  const tokenPayload = await verifyTokenClaims(token);
+  if (!tokenPayload)
+    throw getUnauthorizedResponse({
+      code: apiErrorCodes.INVALID_AUTH_TOKEN,
+      message: 'Invalid token payload',
+    });
+
+  try {
+    await verifyTokenClaims({ tokenPayload });
+  } catch (err) {
+    console.error(err);
+    if (err instanceof Error) {
+      throw getUnauthorizedResponse({
+        code: apiErrorCodes.INVALID_AUTH_TOKEN,
+        message: 'Invalid token claims',
+      });
+    }
+  }
   await requireValidSessionInToken({ tokenPayload });
 
   return { token, tokenPayload };

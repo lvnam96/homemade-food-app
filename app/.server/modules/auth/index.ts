@@ -48,22 +48,20 @@ export const generateRefreshToken = (
 
 // export const authenticator = new Authenticator<ProviderUser>();
 
-export const verifyTokenClaims = async (token: string) => {
-  const { payload } = await verifyJwt<AccessTokenPayload | RefreshTokenPayload>(token);
+export const verifyTokenClaims = async ({ tokenPayload }: { tokenPayload: SharedJWTPayload }) => {
   const currentTime = Math.floor(Date.now() / 1000);
 
   // Validate the token's expiration (exp) and not before (nbf) claims:
-  if ((payload.exp && payload.exp < currentTime) || (payload.nbf && payload.nbf > currentTime)) {
+  if ((tokenPayload.exp && tokenPayload.exp < currentTime) || (tokenPayload.nbf && tokenPayload.nbf > currentTime)) {
     throw new Error('Token is expired or not yet valid');
   }
 
   // Validate the token's authorized party (azp) claim:
   invariant(import.meta.env.PUBLIC_ORIGIN, 'Missing env variable `PUBLIC_ORIGIN`');
   const permittedOrigins = [import.meta.env.PUBLIC_ORIGIN];
-  if (typeof payload.azp === 'string' && !permittedOrigins.includes(payload.azp)) {
+  if (typeof tokenPayload.azp === 'string' && !permittedOrigins.includes(tokenPayload.azp)) {
     throw new Error('Invalid `azp` claim');
   }
-  return payload;
 };
 
 export const checkIsValidSessionInTokenPayload = async <
