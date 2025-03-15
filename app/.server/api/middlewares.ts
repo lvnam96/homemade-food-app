@@ -10,7 +10,16 @@ import { checkIsValidSessionInTokenPayload, verifyTokenClaims } from '~/.server/
 import { apiErrorCodes } from '~/services/api';
 import type { JWTVerifyResult } from 'jose';
 import type { MaybePromise, Nullishable } from '~/utils/types';
+import { getRequestCache } from '~/.server/utils/request-cache';
 import { parseFormData, type FileUploadHandler } from '@mjackson/form-data-parser';
+
+const getRequestCacheForMiddleware = (...args: Parameters<typeof getRequestCache>) =>
+  getRequestCache<{
+    tokenPayload: JWTVerifyResult<AccessTokenPayload | RefreshTokenPayload>['payload'] | null;
+    json: JSONValue;
+    searchParams: URLSearchParams;
+    formData: FormData;
+  }>(...args);
 
 const getRequestBearerTokenData = async <
   P extends AccessTokenPayload | RefreshTokenPayload,
@@ -28,16 +37,23 @@ export const getRequestData = async <P extends AccessTokenPayload | RefreshToken
   token: string | null;
   tokenPayload: JWTVerifyResult<P>['payload'] | null;
 }> => {
+  const cache = getRequestCacheForMiddleware(request);
+  // Retrieving token is not expensive so we don't cache it:
   const token = getBearerTokenFromAuthHeader(request.headers.get('Authorization'));
-  const jwtVerifyResult = await getRequestBearerTokenData<P>(token);
+
+  if (!cache.has('tokenPayload')) {
+    const jwtVerifyResult = await getRequestBearerTokenData<P>(token);
+    cache.set('tokenPayload', jwtVerifyResult?.payload ?? null);
+  }
+
   return {
     token,
-    tokenPayload: jwtVerifyResult?.payload ?? null,
+    tokenPayload: cache.get('tokenPayload')!,
   };
 };
 
 export const requireAuthenticatedUser = async ({ request }: Pick<ActionFunctionArgs, 'request'>) => {
-  const { token, tokenPayload } = await getRequestData({ request });
+  const { token, tokenPayload } = await getRequestData<AccessTokenPayload>({ request });
 
   if (!token)
     throw getUnauthorizedResponse({
@@ -108,9 +124,10 @@ export const requireFormBody = async ({
   predicate?: <T>(requestBody: T) => MaybePromise<null | string>; // returns message if validation fails, null otherwise
   parseHandler?: FileUploadHandler;
 }) => {
+  const contentTypeHeader = request.headers.get('content-type');
   if (
-    request.headers.get('content-type')?.toLowerCase() !== 'application/x-www-form-urlencoded' &&
-    !request.headers.get('content-type')?.startsWith('multipart/form-data')
+    contentTypeHeader?.toLowerCase() !== 'application/x-www-form-urlencoded' &&
+    !contentTypeHeader?.startsWith('multipart/form-data')
   ) {
     throw getBadRequestResponse({
       code: apiErrorCodes.INVALID_REQUEST_BODY,
@@ -120,12 +137,19 @@ export const requireFormBody = async ({
 
   if (!predicate) return;
 
-  let requestBody: FormData;
-  if (request.headers.get('content-type')?.toLowerCase() === 'application/x-www-form-urlencoded')
-    requestBody = await request.clone().formData();
-  else {
-    requestBody = await parseFormData(request, parseHandler);
+  const cache = getRequestCacheForMiddleware(request);
+  if (!cache.has('formData')) {
+    let formData: FormData;
+    if (contentTypeHeader?.toLowerCase() === 'application/x-www-form-urlencoded') {
+      formData = await request.clone().formData();
+    } else {
+      formData = await parseFormData(request, parseHandler);
+    }
+
+    cache.set('formData', formData);
   }
+  const requestBody = cache.get('formData')!;
+
   const validationMessage = await predicate(requestBody);
   if (validationMessage) {
     throw getBadRequestResponse({
@@ -148,7 +172,13 @@ export const requireJsonBody = async ({
     });
   }
 
-  const requestBody = await request.clone().json();
+  const cache = getRequestCacheForMiddleware(request);
+  if (!cache.has('json')) {
+    const json = await request.clone().json();
+    cache.set('json', json);
+  }
+  const requestBody = cache.get('json')!;
+
   const validationMessage = await predicate(requestBody);
   if (validationMessage) {
     throw getBadRequestResponse({
@@ -164,15 +194,21 @@ export const requireSearchParams = async ({
 }: Pick<ActionFunctionArgs, 'request'> & {
   predicate?: <T extends URLSearchParams>(requestBody: T) => MaybePromise<null | string>; // returns message if validation fails, null otherwise
 }) => {
-  const url = new URL(request.url);
-  if (!url.searchParams.size) {
+  const cache = getRequestCacheForMiddleware(request);
+  if (!cache.has('searchParams')) {
+    const url = new URL(request.url);
+    cache.set('searchParams', url.searchParams);
+  }
+  const searchParams = cache.get('searchParams')!;
+
+  if (!searchParams.size) {
     throw getBadRequestResponse({
       code: apiErrorCodes.INVALID_REQUEST_QUERY_PARAMS,
       message: 'Missing required query parameters',
     });
   }
 
-  const validationMessage = await predicate(url.searchParams);
+  const validationMessage = await predicate(searchParams);
   if (validationMessage) {
     throw getBadRequestResponse({
       code: apiErrorCodes.INVALID_REQUEST_QUERY_PARAMS,
