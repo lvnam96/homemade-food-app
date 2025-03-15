@@ -27,7 +27,7 @@ export const generateAccessToken = (
       type: 'access_token',
       azp: import.meta.env.PUBLIC_ORIGIN,
     },
-    { expirationTime: expirationTime || '1d' },
+    { expirationTime: expirationTime || '30m' },
   );
 };
 
