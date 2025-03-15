@@ -11,6 +11,7 @@ import {
 import { checkIsPlainObject } from '~/utils/data';
 
 import '~/.server/utils/import-env';
+import invariant from 'tiny-invariant';
 
 export const signJwt = (
   payload: Record<string, JSONValue> & JWTPayload,
@@ -27,6 +28,7 @@ export const signJwt = (
     algorithm: 'HS512',
   },
 ) => {
+  if (!secret) invariant(process.env.JWT_SECRET, 'Missing env variable `JWT_SECRET`');
   if (!checkIsPlainObject(payload)) throw new Error('Payload must be an object');
   return new SignJWT(payload)
     .setProtectedHeader({ alg: algorithm })
@@ -43,8 +45,10 @@ export const verifyJwt = <T extends Record<string, any> = JWTPayload>(
   }: JWTVerifyOptions & {
     secret?: KeyLike | Uint8Array;
   } = {},
-): Promise<JWTVerifyResult<T>> =>
-  jwtVerify<T>(token, secret || Buffer.from(process.env.JWT_SECRET), {
+): Promise<JWTVerifyResult<T>> => {
+  if (!secret) invariant(process.env.JWT_SECRET, 'Missing env variable `JWT_SECRET`');
+  return jwtVerify<T>(token, secret || Buffer.from(process.env.JWT_SECRET), {
     algorithms: ['HS512', 'RS512'],
     ...options,
   });
+};
