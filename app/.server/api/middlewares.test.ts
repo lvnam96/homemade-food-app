@@ -155,7 +155,6 @@ describe('requireValidSessionInToken()', () => {
               id: '21',
             },
           },
-          type: 'access_token',
         },
       }),
     ).resolves.not.toThrow();
