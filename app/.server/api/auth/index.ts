@@ -6,6 +6,7 @@ import {
   getUnauthorizedResponse,
   wrapResponseBody,
 } from '~/.server/utils/api';
+import { createPooledDBConnection } from '~/.server/db';
 import { makeObjectPropsJsonCompatible } from '~/utils/data';
 import { getRequestData, requireAnonymousUser, requireJsonBody, requireValidTokenType } from '../middlewares';
 import { generateAccessToken, generateRefreshToken, signUserIn, signUserOut, signUserUp } from '~/.server/modules/auth';
@@ -25,7 +26,11 @@ export const action = async (actionArgs: ActionFunctionArgs) => {
       await requireAnonymousUser(actionArgs);
 
       const json = await request.json();
-      const newUserData = await signUserUp(json);
+      const { db, pool } = createPooledDBConnection();
+      const newUserData = await signUserUp(json, {
+        pooledDBInstance: db,
+      });
+      await pool.end();
       return Response.json(wrapResponseBody(makeObjectPropsJsonCompatible(newUserData)));
     } catch (err) {
       if (err instanceof Response) throw err;

@@ -6,7 +6,6 @@ import { createUser, verifyUserPassword } from './models/user';
 import { createAuthSession, deleteAuthSessionById, getAuthSessionById } from './models/session';
 import { makeObjectPropsJsonCompatible } from '~/utils/data';
 import type { UserCredentials, UserCredentialsForInsert, UserDataForInsert } from './types';
-import { getSaltedPassword, hashPassword } from '~/.server/utils/password';
 
 import '~/.server/utils/import-env';
 
@@ -122,18 +121,13 @@ export const signUserOut = async (refreshToken: string) => {
 export const signUserUp = async (
   user: Pick<UserCredentialsForInsert, 'email' | 'password'> &
     Omit<UserDataForInsert, 'createdAt' | 'updatedAt' | 'deletedAt'>,
+  { pooledDBInstance }: Parameters<typeof createUser>[1],
 ) => {
   invariant(user, 'User data is required');
   invariant(user.email, 'Email is required');
   invariant(user.password, 'Password is required');
-  invariant(user.displayedName || user.email, 'Displayed name is required');
 
-  const { passwd, salt } = await getSaltedPassword(user.password);
+  user.displayedName = user.displayedName || user.email;
 
-  return createUser({
-    ...user,
-    displayedName: user.displayedName || user.email,
-    salt,
-    password: await hashPassword(passwd),
-  });
+  return createUser(user, { pooledDBInstance });
 };

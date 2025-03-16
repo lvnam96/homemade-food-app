@@ -4,9 +4,9 @@ import { eq, getTableName, sql } from 'drizzle-orm';
 import { userCredentialsInHf, usersInHf } from '~/.server/db/schema';
 import type { UserCredentials, UserCredentialsForInsert, UserDataForInsert } from '../types';
 import { pick } from '~/utils/data';
-import { db } from '~/.server/db';
+import { db, type createPooledDBConnection } from '~/.server/db';
 // import { bigint, date, object, orNull, string } from '@adllang/jsonbinding';
-import { comparePassword, getSaltedPassword } from '~/.server/utils/password';
+import { comparePassword, getSaltedPassword, hashPassword } from '~/.server/utils/password';
 
 // export const userJsonBinding = object<UserData>({
 //   id: bigint(),
@@ -79,31 +79,49 @@ export const deleteUserByEmail = async (
 };
 
 export const createUser = async (
-  user: Omit<UserCredentialsForInsert, 'userId' | 'updatedAt'> & UserDataForInsert,
+  user: Pick<UserCredentialsForInsert, 'email' | 'password'> &
+    Omit<UserDataForInsert, 'createdAt' | 'updatedAt' | 'deletedAt'>,
   {
-    dbInstance = db,
+    pooledDBInstance,
   }: {
-    dbInstance?: typeof db | Parameters<Parameters<(typeof db)['transaction']>[0]>[0];
-  } = {
-    dbInstance: db,
+    pooledDBInstance: ReturnType<typeof createPooledDBConnection>['db'];
   },
 ) => {
-  // `INSERT INTO ${usersInHf} (${usersInHf.displayName}, ${usersInHf.phoneNumber}) VALUES (${user.email}, ${null}) RETURNING *`
-  const [userRes] = await dbInstance
-    .insert(usersInHf)
-    .values(pick(user, ['displayedName', 'phoneNumber']))
-    .returning();
+  return await pooledDBInstance.transaction(async (tx) => {
+    const normalizedEmail = normalizeEmail(user.email);
+    // Lock the row if it exists (`FOR UPDATE` ensures exclusive lock)
+    const existingUser = await tx
+      .select()
+      .from(userCredentialsInHf)
+      .where(eq(userCredentialsInHf.email, normalizedEmail))
+      .for('update');
 
-  // `INSERT INTO ${userCredentialsInHf} (${userCredentialsInHf.password}, ${userCredentialsInHf.salt}, ${userCredentialsInHf.email}, ${userCredentialsInHf.userId}) VALUES (${hashedPassword}, ${user.email}, ${userRes[0].id}) RETURNING *`
-  const [userCredentialsRes] = await dbInstance
-    .insert(userCredentialsInHf)
-    .values({
-      ...pick(user, ['password', 'salt', 'email']),
-      userId: userRes.id,
-    })
-    .returning();
+    if (existingUser.length) {
+      throw new Error(`Email ${user.email} is already registered by another user`);
+    }
 
-  return { ...userRes, email: userCredentialsRes.email };
+    const { passwd, salt } = await getSaltedPassword(user.password);
+    const hashedPassword = await hashPassword(passwd);
+
+    // `INSERT INTO ${usersInHf} (${usersInHf.displayName}, ${usersInHf.phoneNumber}) VALUES (${user.email}, ${null}) RETURNING *`
+    const [userRes] = await tx
+      .insert(usersInHf)
+      .values(pick(user, ['displayedName', 'phoneNumber']))
+      .returning();
+
+    // `INSERT INTO ${userCredentialsInHf} (${userCredentialsInHf.password}, ${userCredentialsInHf.salt}, ${userCredentialsInHf.email}, ${userCredentialsInHf.userId}) VALUES (${hashedPassword}, ${user.email}, ${userRes[0].id}) RETURNING *`
+    const [userCredentialsRes] = await tx
+      .insert(userCredentialsInHf)
+      .values({
+        email: normalizedEmail,
+        salt,
+        password: hashedPassword,
+        userId: userRes.id,
+      })
+      .returning();
+
+    return { ...userRes, email: userCredentialsRes.email };
+  });
 };
 
 export const verifyUserPassword = async (
@@ -156,11 +174,12 @@ export const resetUserPassword = async (
   },
 ) => {
   const { passwd, salt } = await getSaltedPassword(password);
+  const hashedPassword = await hashPassword(passwd);
   return dbInstance
     .update(userCredentialsInHf)
     .set({
       salt,
-      password: passwd,
+      password: hashedPassword,
     })
     .where(eq(userCredentialsInHf.email, email))
     .returning();
