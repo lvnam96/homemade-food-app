@@ -1,4 +1,4 @@
-import { afterAll, afterEach, describe, expect, it, vi } from 'vitest';
+import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   getRequestData,
   requireAnonymousUser,
@@ -10,7 +10,8 @@ import {
   requireValidSessionInToken,
   requireValidTokenType,
 } from './middlewares';
-import { generateAccessToken, getAuthSessionById } from '../modules/auth';
+import { generateAccessToken, generateRefreshToken, getAuthSessionById } from '../modules/auth';
+import { getRequestCache } from '../utils/request-cache';
 
 vi.mock(
   '../modules/auth/models/session.ts', // NOTE: must mock the actual module, not the re-exported one
@@ -23,6 +24,23 @@ vi.mock(
   },
 );
 
+// Steps to mock external module (`getRequestCache` in this case) imported to being tested module:
+// 1. First, partially mock the module that exports `getRequestCache`
+vi.mock(import('../utils/request-cache'), async (actual) => {
+  return {
+    __esmodule: true,
+    ...((await actual()) as any), // rest of exports will get actual implementation
+    getRequestCache: vi.fn(),
+  };
+});
+// 2. Then, set actual implementation of `getRequestCache` to mocked one before each test
+beforeEach(async () => {
+  vi.mocked(getRequestCache).mockImplementation(
+    (await vi.importActual<typeof import('../utils/request-cache')>('../utils/request-cache')).getRequestCache,
+  );
+});
+// 3. Finally, mock implementation of `getRequestCache` in specific tests using `vi.mocked(getRequestCache).mockImplementation(...)` (see `requireValidTokenType()` test suite for example)
+
 afterEach(() => {
   vi.resetAllMocks();
 });
@@ -32,6 +50,10 @@ afterAll(() => {
 });
 
 const validAccessToken = await generateAccessToken({
+  sessionId: '39',
+  user: { id: '21', email: 'example@gmail.com' },
+});
+const validRefreshToken = await generateRefreshToken({
   sessionId: '39',
   user: { id: '21', email: 'example@gmail.com' },
 });
@@ -65,7 +87,7 @@ describe('requireAuthenticatedUser()', () => {
       expiredAt: new Date(2099, 0, 1),
       updatedAt: null,
     };
-    if (vi.isMockFunction(getAuthSessionById)) getAuthSessionById.mockImplementation(() => existingSession);
+    if (vi.isMockFunction(getAuthSessionById)) getAuthSessionById.mockImplementation(async () => existingSession);
 
     await expect(
       requireAuthenticatedUser({
@@ -102,7 +124,7 @@ describe('requireAnonymousUser()', () => {
   });
 
   it('should throw Response object if user request is sent with any bearer token, not matter valid or invalid', async () => {
-    if (vi.isMockFunction(getAuthSessionById)) getAuthSessionById.mockImplementation(() => undefined);
+    if (vi.isMockFunction(getAuthSessionById)) getAuthSessionById.mockImplementation(async () => undefined);
 
     // Expect error to be thrown when verifying token fails:
     await expect(
@@ -122,7 +144,7 @@ describe('requireAnonymousUser()', () => {
       expiredAt: new Date(2099, 0, 1),
       updatedAt: null,
     };
-    if (vi.isMockFunction(getAuthSessionById)) getAuthSessionById.mockImplementation(() => existingSession);
+    if (vi.isMockFunction(getAuthSessionById)) getAuthSessionById.mockImplementation(async () => existingSession);
     await expect(
       requireAnonymousUser({
         request: new Request('https://example.com', {
@@ -144,115 +166,168 @@ describe('requireValidSessionInToken()', () => {
       expiredAt: new Date(2099, 0, 1),
       updatedAt: null,
     };
-    if (vi.isMockFunction(getAuthSessionById)) getAuthSessionById.mockImplementation(() => existingSession);
+    if (vi.isMockFunction(getAuthSessionById)) getAuthSessionById.mockImplementation(async () => existingSession);
 
     await expect(
       requireValidSessionInToken({
-        tokenPayload: {
-          payload: {
-            sessionId: '2',
-            user: {
-              id: '21',
-            },
-          },
-        },
+        request: new Request('https://example.com', {
+          headers: new Headers({
+            Authorization: 'Bearer ' + validAccessToken,
+          }),
+        }),
       }),
     ).resolves.not.toThrow();
   });
 });
 
 describe('requireValidTokenType()', () => {
-  it('should do nothing if token type is valid', () => {
-    expect(
+  const cacheGetFn = vi.fn();
+  const cacheHasFn = vi.fn();
+
+  it('should do nothing if token type is valid', async () => {
+    await expect(
       requireValidTokenType({
         expectedTokenType: 'access_token',
-        tokenType: 'access_token',
+      })({
+        request: new Request('https://example.com', {
+          headers: new Headers({ Authorization: 'Bearer ' + validAccessToken }),
+        }),
       }),
-    ).toBeUndefined();
-    expect(
+    ).resolves.toBeUndefined();
+
+    await expect(
       requireValidTokenType({
         expectedTokenType: 'refresh_token',
-        tokenType: 'refresh_token',
+      })({
+        request: new Request('https://example.com', {
+          headers: new Headers({ Authorization: 'Bearer ' + validRefreshToken }),
+        }),
       }),
-    ).toBeUndefined();
+    ).resolves.toBeUndefined();
   });
 
-  it('should throw Response object if token type is invalid', () => {
-    expect(() =>
+  it('should throw Response object if token type is invalid', async () => {
+    await expect(
       requireValidTokenType({
         expectedTokenType: 'access_token',
-        tokenType: 'refresh_token',
+      })({
+        request: new Request('https://example.com', {
+          headers: new Headers({ Authorization: 'Bearer ' + validRefreshToken }),
+        }),
       }),
-    ).toThrow(Response);
-    expect(() =>
+    ).rejects.toThrow(Response);
+
+    await expect(
       requireValidTokenType({
         expectedTokenType: 'refresh_token',
-        tokenType: 'access_token',
+      })({
+        request: new Request('https://example.com', {
+          headers: new Headers({ Authorization: 'Bearer ' + validAccessToken }),
+        }),
       }),
-    ).toThrow(Response);
+    ).rejects.toThrow(Response);
   });
 
-  it('should throw Response object if passed token types are not valid', () => {
+  it('should throw Response object if passed token types are not valid', async () => {
+    vi.mocked(getRequestCache).mockImplementation(() => ({
+      get: cacheGetFn,
+      has: cacheHasFn.mockImplementation(() => true),
+      set: vi.fn(),
+      remove: vi.fn(),
+      clear: vi.fn(),
+    }));
+    const emptyRequest = new Request('https://example.com');
+
     // Test invalid `tokenType`:
-    expect(() =>
+    cacheGetFn.mockReturnValue({
+      type: null,
+    });
+    await expect(
       requireValidTokenType({
         expectedTokenType: 'access_token',
-        tokenType: null,
+      })({
+        request: emptyRequest,
       }),
-    ).toThrow(Response);
-    expect(() =>
+    ).rejects.toThrow(Response);
+
+    cacheGetFn.mockReturnValue({
+      type: undefined,
+    });
+    await expect(() =>
       requireValidTokenType({
         expectedTokenType: 'access_token',
-        tokenType: undefined,
+      })({
+        request: emptyRequest,
       }),
-    ).toThrow(Response);
+    ).rejects.toThrow(Response);
 
     // Test both invalid `tokenType` and `expectedTokenType` but matching each other:
-    expect(() =>
+    cacheGetFn.mockReturnValue({
+      type: null,
+    });
+    await expect(
       requireValidTokenType({
         // @ts-expect-error Testing invalid argument
         expectedTokenType: null,
-        tokenType: null,
+      })({
+        request: emptyRequest,
       }),
-    ).toThrow(Response);
-    expect(() =>
-      requireValidTokenType({
-        // @ts-expect-error Testing invalid argument
-        expectedTokenType: undefined,
-        tokenType: undefined,
-      }),
-    ).toThrow(Response);
-    expect(() =>
-      requireValidTokenType({
-        // @ts-expect-error Testing invalid argument
-        expectedTokenType: 'undefined',
-        // @ts-expect-error Testing invalid argument
-        tokenType: 'undefined',
-      }),
-    ).toThrow(Response);
+    ).rejects.toThrow(Response);
 
-    // Test invalid `expectedTokenType`:
-    expect(() =>
-      requireValidTokenType({
-        // @ts-expect-error Testing invalid argument
-        expectedTokenType: null,
-        tokenType: 'access_token',
-      }),
-    ).toThrow(Response);
-    expect(() =>
+    cacheGetFn.mockReturnValue({
+      type: undefined,
+    });
+    await expect(
       requireValidTokenType({
         // @ts-expect-error Testing invalid argument
         expectedTokenType: undefined,
-        tokenType: 'access_token',
+      })({
+        request: emptyRequest,
       }),
-    ).toThrow(Response);
-    expect(() =>
+    ).rejects.toThrow(Response);
+
+    cacheGetFn.mockReturnValue({
+      type: 'invalid_type',
+    });
+    await expect(
+      requireValidTokenType({
+        // @ts-expect-error Testing invalid argument
+        expectedTokenType: 'invalid_type',
+      })({
+        request: emptyRequest,
+      }),
+    ).rejects.toThrow(Response);
+  });
+
+  it('should throw Response object if expected token type is invalid', async () => {
+    const validAuthedRequest = new Request('https://example.com', {
+      headers: new Headers({ Authorization: 'Bearer ' + validAccessToken }),
+    });
+
+    await expect(
+      requireValidTokenType({
+        // @ts-expect-error Testing invalid argument
+        expectedTokenType: null,
+      })({
+        request: validAuthedRequest,
+      }),
+    ).rejects.toThrow(Response);
+    await expect(
+      requireValidTokenType({
+        // @ts-expect-error Testing invalid argument
+        expectedTokenType: undefined,
+      })({
+        request: validAuthedRequest,
+      }),
+    ).rejects.toThrow(Response);
+    await expect(
       requireValidTokenType({
         // @ts-expect-error Testing invalid argument
         expectedTokenType: 'invalid_token_type',
-        tokenType: 'access_token',
+      })({
+        request: validAuthedRequest,
       }),
-    ).toThrow(Response);
+    ).rejects.toThrow(Response);
   });
 });
 
@@ -262,7 +337,7 @@ describe('requireFormBody()', () => {
     multipartFormData.set('foo', 'bar');
     multipartFormData.set('file', new File(['{"hello":"world"}'], 'demo.json', { type: 'application/json' }));
     await expect(
-      requireFormBody({
+      requireFormBody()({
         request: new Request('https://example.com', {
           method: 'POST',
           body: multipartFormData,
@@ -273,7 +348,7 @@ describe('requireFormBody()', () => {
     const regularFormData = new FormData();
     regularFormData.set('foo', 'bar');
     await expect(
-      requireFormBody({
+      requireFormBody()({
         request: new Request('https://example.com', {
           method: 'POST',
           headers: new Headers({
@@ -284,7 +359,7 @@ describe('requireFormBody()', () => {
       }),
     ).resolves.not.toThrow();
     await expect(
-      requireFormBody({
+      requireFormBody()({
         request: new Request('https://example.com', {
           method: 'POST',
           // without manually setting `Content-Type: application/x-www-form-urlencoded` header
@@ -298,7 +373,7 @@ describe('requireFormBody()', () => {
 describe('requireJsonBody()', () => {
   it('should do nothing if request body is JSON', async () => {
     await expect(
-      requireJsonBody({
+      requireJsonBody()({
         request: new Request('https://example.com', {
           method: 'POST',
           headers: new Headers({
@@ -312,7 +387,7 @@ describe('requireJsonBody()', () => {
 
   it('should throw Response object if request body is not JSON even though `Content-Type` header is `application/json`', async () => {
     await expect(
-      requireJsonBody({
+      requireJsonBody()({
         request: new Request('https://example.com', {
           method: 'POST',
           headers: new Headers({
@@ -326,7 +401,7 @@ describe('requireJsonBody()', () => {
 
   it('should throw Response object if request method is GET even though `Content-Type` header is `application/json`', async () => {
     await expect(
-      requireJsonBody({
+      requireJsonBody()({
         request: new Request('https://example.com', {
           method: 'GET',
           headers: new Headers({
@@ -339,7 +414,7 @@ describe('requireJsonBody()', () => {
 
   it('should throw Response object if `Content-Type` header is not `application/json`', async () => {
     await expect(
-      requireJsonBody({
+      requireJsonBody()({
         request: new Request('https://example.com', {
           headers: new Headers({
             'Content-Type': 'text/plain',
@@ -348,12 +423,12 @@ describe('requireJsonBody()', () => {
       }),
     ).rejects.toThrow(Response);
     await expect(
-      requireJsonBody({
+      requireJsonBody()({
         request: new Request('https://example.com', { headers: new Headers({}) }),
       }),
     ).rejects.toThrow(Response);
     await expect(
-      requireJsonBody({
+      requireJsonBody()({
         request: new Request('https://example.com'),
       }),
     ).rejects.toThrow(Response);
@@ -363,7 +438,7 @@ describe('requireJsonBody()', () => {
 describe('requireSearchParams()', () => {
   it('should do nothing if request search params exist', async () => {
     await expect(
-      requireSearchParams({
+      requireSearchParams()({
         request: new Request('https://example.com?foo=bar'),
       }),
     ).resolves.not.toThrow();
@@ -371,12 +446,12 @@ describe('requireSearchParams()', () => {
 
   it('should throw Response object if request search params do not exist', async () => {
     await expect(
-      requireSearchParams({
+      requireSearchParams()({
         request: new Request('https://example.com'),
       }),
     ).rejects.toThrow(Response);
     await expect(
-      requireSearchParams({
+      requireSearchParams()({
         request: new Request('https://example.com?'),
       }),
     ).rejects.toThrow(Response);
@@ -387,8 +462,9 @@ describe('requirePathParams()', () => {
   it('should do nothing if request path params exist', async () => {
     await expect(
       requirePathParams({
-        params: { id: '1', foo: 'bar' },
         predicate: (params) => (typeof params.id === 'string' && params.id ? null : 'Invalid ID'),
+      })({
+        params: { id: '1', foo: 'bar' },
       }),
     ).resolves.not.toThrow();
   });
@@ -398,14 +474,16 @@ describe('requirePathParams()', () => {
       typeof params.id === 'string' && params.id ? null : 'Invalid ID';
     await expect(
       requirePathParams({
+        predicate,
+      })({
         params: {},
-        predicate: predicate,
       }),
     ).rejects.toThrow(Response);
     await expect(
       requirePathParams({
+        predicate,
+      })({
         params: { id: '' },
-        predicate: predicate,
       }),
     ).rejects.toThrow(Response);
   });

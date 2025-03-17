@@ -22,7 +22,7 @@ export const action = async (actionArgs: ActionFunctionArgs) => {
 
   if (request.method === 'POST' && action === 'signup' && target === 'account') {
     try {
-      await requireJsonBody(actionArgs);
+      await requireJsonBody()(actionArgs);
       await requireAnonymousUser(actionArgs);
 
       const json = await request.json();
@@ -39,7 +39,7 @@ export const action = async (actionArgs: ActionFunctionArgs) => {
     }
   } else if (request.method === 'POST' && action === 'signin') {
     try {
-      await requireJsonBody(actionArgs);
+      await requireJsonBody()(actionArgs);
       await requireAnonymousUser(actionArgs);
 
       const json = await request.json();
@@ -59,13 +59,11 @@ export const action = async (actionArgs: ActionFunctionArgs) => {
     }
   } else if (request.method === 'POST' && action === 'signout') {
     try {
-      const { tokenPayload } = await getRequestData<RefreshTokenPayload>(actionArgs);
-      requireValidTokenType({
+      await requireValidTokenType({
         expectedTokenType: 'refresh_token',
-        tokenType: tokenPayload?.type,
-      });
+      })(actionArgs);
 
-      const refreshToken = getBearerTokenFromAuthHeader(request.headers.get('Authorization')); // Bearer token
+      const refreshToken = getBearerTokenFromAuthHeader(request.headers.get('Authorization'));
       if (!refreshToken)
         throw getBadRequestResponse({
           code: apiErrorCodes.INVALID_AUTH_TOKEN,
