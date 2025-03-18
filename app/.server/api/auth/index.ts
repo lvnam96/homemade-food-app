@@ -8,7 +8,7 @@ import {
 } from '~/.server/utils/api';
 import { createPooledDBConnection } from '~/.server/db';
 import { makeObjectPropsJsonCompatible } from '~/utils/data';
-import { getRequestData, requireAnonymousUser, requireJsonBody, requireValidTokenType } from '../middlewares';
+import { composeMiddlewares, requireAnonymousUser, requireJsonBody, requireValidTokenType } from '../middlewares';
 import { generateAccessToken, generateRefreshToken, signUserIn, signUserOut, signUserUp } from '~/.server/modules/auth';
 import { apiErrorCodes } from '~/services/api';
 
@@ -22,16 +22,15 @@ export const action = async (actionArgs: ActionFunctionArgs) => {
 
   if (request.method === 'POST' && action === 'signup' && target === 'account') {
     try {
-      await requireJsonBody()(actionArgs);
-      await requireAnonymousUser(actionArgs);
-
-      const json = await request.json();
-      const { db, pool } = createPooledDBConnection();
-      const newUserData = await signUserUp(json, {
-        pooledDBInstance: db,
-      });
-      await pool.end();
-      return Response.json(wrapResponseBody(makeObjectPropsJsonCompatible(newUserData)));
+      return await composeMiddlewares(requireJsonBody(), requireAnonymousUser, async ({ cache }) => {
+        const json = cache.get('json')!;
+        const { db, pool } = createPooledDBConnection();
+        const newUserData = await signUserUp(json as any, {
+          pooledDBInstance: db,
+        });
+        await pool.end();
+        return Response.json(wrapResponseBody(makeObjectPropsJsonCompatible(newUserData)));
+      })(actionArgs);
     } catch (err) {
       if (err instanceof Response) throw err;
       console.error(err);
@@ -39,19 +38,18 @@ export const action = async (actionArgs: ActionFunctionArgs) => {
     }
   } else if (request.method === 'POST' && action === 'signin') {
     try {
-      await requireJsonBody()(actionArgs);
-      await requireAnonymousUser(actionArgs);
-
-      const json = await request.json();
-      const { jwtPayload } = await signUserIn(json);
-      return Response.json(
-        wrapResponseBody(
-          makeObjectPropsJsonCompatible({
-            accessToken: await generateAccessToken(jwtPayload),
-            refreshToken: await generateRefreshToken(jwtPayload),
-          }),
-        ),
-      );
+      return await composeMiddlewares(requireJsonBody(), requireAnonymousUser, async ({ cache }) => {
+        const json = cache.get('json')!;
+        const { jwtPayload } = await signUserIn(json as any);
+        return Response.json(
+          wrapResponseBody(
+            makeObjectPropsJsonCompatible({
+              accessToken: await generateAccessToken(jwtPayload),
+              refreshToken: await generateRefreshToken(jwtPayload),
+            }),
+          ),
+        );
+      })(actionArgs);
     } catch (err) {
       if (err instanceof Response) throw err;
       console.error(err);

@@ -1,9 +1,10 @@
-import type { ActionFunctionArgs } from '@remix-run/node';
+import type { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/node';
 import { verifyJwt } from '~/.server/utils/jwt';
 import {
   getBadRequestResponse,
   getBearerTokenFromAuthHeader,
   getForbiddenResponse,
+  getGeneralServerErrorResponse,
   getUnauthorizedResponse,
 } from '~/.server/utils/api';
 import { checkIsValidSessionInTokenPayload, verifyTokenClaims } from '~/.server/modules/auth';
@@ -30,6 +31,50 @@ const getRequestBearerTokenData = async <
   if (token) return verifyJwt<P>(token) as Promise<T extends null ? null : JWTVerifyResult<P>>;
   return null as unknown as Promise<T extends null ? null : JWTVerifyResult<P>>;
 };
+
+/**
+ * NOTE: Only applicable to middlewares that have same signature as `(args: ActionFunctionArgs | LoaderFunctionArgs) => Promise<any>`
+ *
+ * Usage with action/loader:
+ * ```ts
+ *  export const action = composeMiddleware(
+ *    requireAuthenticatedUser,
+ *    requireFormBody(),
+ *    async ({ request, cache }) => {
+ *      // Access `formData` in `cache` which was set by `requireFormBody`
+ *      // Access `tokenPayload` in `cache` which was set by `requireAuthenticatedUser`
+ *      // Rest of your action logic
+ *    }
+ *  );
+ * ```
+ */
+export const composeMiddlewares =
+  (
+    ...middlewares: Array<
+      (
+        args: (ActionFunctionArgs | LoaderFunctionArgs) & { cache: ReturnType<typeof getRequestCacheForMiddleware> },
+      ) => Promise<any>
+    >
+  ) =>
+  async (args: ActionFunctionArgs | LoaderFunctionArgs) => {
+    const cache = getRequestCacheForMiddleware(args.request);
+    const enhancedArgs = { ...args, cache };
+
+    for (const middleware of middlewares) {
+      try {
+        const result = await middleware(enhancedArgs);
+
+        // Middleware can return a Response to respond early:
+        if (result instanceof Response) return result;
+      } catch (err) {
+        // Middleware can throw a Response to abort early:
+        if (err instanceof Response) throw err; // TODO: decide to return or rethrow Response object
+
+        if (err instanceof Error) console.error(err);
+        throw getGeneralServerErrorResponse();
+      }
+    }
+  };
 
 export const getRequestData = async <P extends AccessTokenPayload | RefreshTokenPayload>({
   request,

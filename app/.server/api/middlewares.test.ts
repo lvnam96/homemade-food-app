@@ -1,5 +1,6 @@
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  composeMiddlewares,
   getRequestData,
   requireAnonymousUser,
   requireAuthenticatedUser,
@@ -56,6 +57,76 @@ const validAccessToken = await generateAccessToken({
 const validRefreshToken = await generateRefreshToken({
   sessionId: '39',
   user: { id: '21', email: 'example@gmail.com' },
+});
+
+describe('composeMiddlewares()', () => {
+  it('should compose multiple middlewares correctly', async () => {
+    const requestBody = new FormData();
+    requestBody.set('foo', 'bar');
+    let formData: FormData;
+    const mockedMiddleware = vi.fn();
+    await expect(
+      composeMiddlewares(requireFormBody(), mockedMiddleware, async ({ cache }) => {
+        formData = cache.get('formData')!;
+      })({
+        request: new Request('https://example.com', {
+          method: 'POST',
+          body: requestBody,
+        }),
+        params: {},
+        context: {},
+      }),
+    ).resolves.not.toThrow();
+
+    expect(mockedMiddleware).toBeCalled();
+    // @ts-expect-error TS parser misunderstanding `formData` variable is used before being assigned
+    expect(formData?.get('foo')).toBe('bar');
+  });
+
+  it('should catch Error thrown from any middleware in the chain & stop calling later middlewares', async () => {
+    const mockedMiddleware1 = vi.fn();
+    const mockedMiddleware2 = vi.fn().mockRejectedValueOnce(new Error());
+    const mockedMiddleware3 = vi.fn();
+    const mockedMiddleware4 = vi.fn();
+    await expect(
+      composeMiddlewares(
+        mockedMiddleware1,
+        mockedMiddleware2,
+        mockedMiddleware3,
+        mockedMiddleware4,
+      )({
+        request: new Request('https://example.com'),
+        params: {},
+        context: {},
+      }),
+    ).rejects.toThrow(Error);
+    expect(mockedMiddleware1).toBeCalledTimes(1);
+    expect(mockedMiddleware2).toBeCalledTimes(1);
+    expect(mockedMiddleware3).not.toBeCalled();
+    expect(mockedMiddleware4).not.toBeCalled();
+  });
+
+  it('should catch Response thrown from any middleware in the chain & stop calling later middlewares', async () => {
+    const mockedMiddleware1 = vi.fn().mockImplementation(async () => {
+      throw new Response();
+    });
+    const mockedMiddleware2 = vi.fn();
+    const mockedMiddleware3 = vi.fn();
+    await expect(
+      composeMiddlewares(
+        mockedMiddleware1,
+        mockedMiddleware2,
+        mockedMiddleware3,
+      )({
+        request: new Request('https://example.com'),
+        params: {},
+        context: {},
+      }),
+    ).rejects.toThrow(Response);
+    expect(mockedMiddleware1).toBeCalledTimes(1);
+    expect(mockedMiddleware2).not.toBeCalled();
+    expect(mockedMiddleware3).not.toBeCalled();
+  });
 });
 
 describe('getRequestData()', () => {
