@@ -5,7 +5,8 @@
 // - For serverless (uses fetch): https://neon.tech/guides/local-development-with-neon
 
 import { neonConfig, Pool } from '@neondatabase/serverless';
-import { drizzle as neonDrizzle } from 'drizzle-orm/neon-serverless'; // use `'drizzle-orm/neon-http'` for normal HTTP connection on serverless platforms
+import { drizzle as neonServerlessDrizzle } from 'drizzle-orm/neon-serverless'; // use `'drizzle-orm/neon-http'` for normal HTTP connection on serverless platforms
+import { drizzle as neonHttpDrizzle } from 'drizzle-orm/neon-http'; // use `'drizzle-orm/neon-http'` for normal HTTP connection on serverless platforms
 import invariant from 'tiny-invariant';
 import ws from 'ws';
 
@@ -39,7 +40,7 @@ if (process.env.NODE_ENV === 'production') {
   neonConfig.forceDisablePgSSL = true;
 }
 
-export const db = neonDrizzle({
+export const db = neonHttpDrizzle({
   connection: {
     connectionString,
     // TODO: check if this works (`neonDrizzle` has not supported this yet according to its typing):
@@ -53,7 +54,7 @@ export const createPooledDBConnection = () => {
     connectionString,
     max: process.env.DB_MIGRATING || process.env.DB_SEEDING ? 1 : undefined,
   });
-  const db = neonDrizzle(pool, {
+  const db = neonServerlessDrizzle(pool, {
     ...neonConfig,
     casing: 'snake_case',
   });
