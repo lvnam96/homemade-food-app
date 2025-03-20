@@ -89,16 +89,17 @@ export const createUser = async (
 ) => {
   return await pooledDBInstance.transaction(async (tx) => {
     const normalizedEmail = normalizeEmail(user.email);
-    // Lock the row if it exists (`FOR UPDATE` ensures exclusive lock)
-    const existingUser = await tx
-      .select()
-      .from(userCredentialsInHf)
-      .where(eq(userCredentialsInHf.email, normalizedEmail))
-      .for('update');
 
-    if (existingUser.length) {
-      throw new Error(`Email ${user.email} is already registered by another user`);
-    }
+    // Since we already leverage `SELECT ... ON CONFLICT DO NOTHING` when inserting into `userCredentialsInHf` table, we don't need to check if the email already exists before inserting user data as if email already exists, we throw error effectively making entire transaction rollback:
+    // Lock the row if it exists (`FOR UPDATE` ensures exclusive lock)
+    // const existingUser = await tx
+    //   .select()
+    //   .from(userCredentialsInHf)
+    //   .where(eq(userCredentialsInHf.email, normalizedEmail))
+    //   .for('update');
+    // if (existingUser.length) {
+    //   throw new Error(`Email ${user.email} is already registered by another user`);
+    // }
 
     const { passwd, salt } = await getSaltedPassword(user.password);
     const hashedPassword = await hashPassword(passwd);
@@ -118,7 +119,14 @@ export const createUser = async (
         password: hashedPassword,
         userId: userRes.id,
       })
+      .onConflictDoNothing({ target: userCredentialsInHf.email })
       .returning();
+
+    if (!userCredentialsRes) {
+      // FIXME: check if we must clean up the user record we just created
+      // await tx.delete(usersInHf).where(eq(usersInHf.id, userRes.id));
+      throw new Error(`Email ${user.email} is already registered by another user`);
+    }
 
     return { ...userRes, email: userCredentialsRes.email };
   });
