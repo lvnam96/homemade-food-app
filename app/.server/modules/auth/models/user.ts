@@ -135,26 +135,44 @@ export const verifyUserPassword = async (
     dbInstance: db,
   },
 ) => {
-  if (typeof email !== 'string' || !email || typeof password !== 'string' || !password) {
+  const isValidInput =
+    typeof email === 'string' && email.length > 0 && typeof password === 'string' && password.length > 0;
+  if (!isValidInput) {
     return null;
   }
 
-  // `SELECT * FROM ${userCredentialsInHf} INNER JOIN ${usersInHf} on ${userCredentialsInHf.userId} = ${usersInHf.id} WHERE ${userCredentialsInHf.email} = ${email}`
-  const rows = await dbInstance
-    .select()
-    .from(userCredentialsInHf)
-    .where(eq(userCredentialsInHf.email, normalizeEmail(email)))
-    .innerJoin(usersInHf, eq(userCredentialsInHf.userId, usersInHf.id));
+  let user = null;
+  let userCredential = null;
+  try {
+    // `SELECT * FROM ${userCredentialsInHf} INNER JOIN ${usersInHf} on ${userCredentialsInHf.userId} = ${usersInHf.id} WHERE ${userCredentialsInHf.email} = ${email}`
+    const rows = await dbInstance
+      .select()
+      .from(userCredentialsInHf)
+      .where(eq(userCredentialsInHf.email, normalizeEmail(email)))
+      .innerJoin(usersInHf, eq(userCredentialsInHf.userId, usersInHf.id));
 
-  if (!rows.length || !rows[0]) return null;
-  const { [getTableName(usersInHf)]: user, [getTableName(userCredentialsInHf)]: userCredential } = rows[0];
-  if (!userCredential?.password) return null;
+    if (rows.length && rows[0]) {
+      user = rows[0][getTableName(usersInHf)];
+      userCredential = rows[0][getTableName(userCredentialsInHf)];
+    }
+  } catch (error) {
+    console.error('Error querying user:', error);
+  }
 
-  const { passwd } = await getSaltedPassword(password, userCredential.salt);
-  const isValid = await comparePassword(passwd, userCredential.password);
-  if (!isValid) return null;
+  // Timing attack protection: Always perform password hashing and comparison, even if user not found
+  const { passwd } = await getSaltedPassword(password, userCredential?.salt);
+  const isValid = await comparePassword(
+    passwd,
+    userCredential?.password ||
+      // dummy hash:
+      '15f14decb3cb6314a074e15040ceb28068eee5d7709224f5f1620760053b',
+  );
 
-  return user;
+  if (isValid && user) {
+    return user;
+  }
+
+  return null;
 };
 
 export const resetUserPassword = async (
