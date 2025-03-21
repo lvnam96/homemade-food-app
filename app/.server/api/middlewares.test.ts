@@ -11,8 +11,9 @@ import {
   requireValidSessionInToken,
   requireValidTokenType,
 } from './middlewares';
-import { generateAccessToken, generateRefreshToken, getAuthSessionById } from '../modules/auth';
-import { getRequestCache } from '../utils/request-cache';
+import { generateAccessToken, generateRefreshToken, getAuthSessionById } from '~/.server/modules/auth';
+import { getRequestCache } from '~/.server/utils/request-cache';
+import { ServerBaseError } from '~/.server/utils/error';
 
 vi.mock(
   '../modules/auth/models/session.ts', // NOTE: must mock the actual module, not the re-exported one
@@ -66,8 +67,14 @@ describe('composeMiddlewares()', () => {
     let formData: FormData;
     const mockedMiddleware = vi.fn();
     await expect(
-      composeMiddlewares(requireFormBody(), mockedMiddleware, async ({ cache }) => {
-        formData = cache.get('formData')!;
+      composeMiddlewares({
+        middlewares: [
+          requireFormBody(),
+          mockedMiddleware,
+          async ({ cache }) => {
+            formData = cache.get('formData')!;
+          },
+        ],
       })({
         request: new Request('https://example.com', {
           method: 'POST',
@@ -89,17 +96,14 @@ describe('composeMiddlewares()', () => {
     const mockedMiddleware3 = vi.fn();
     const mockedMiddleware4 = vi.fn();
     await expect(
-      composeMiddlewares(
-        mockedMiddleware1,
-        mockedMiddleware2,
-        mockedMiddleware3,
-        mockedMiddleware4,
-      )({
+      composeMiddlewares({
+        middlewares: [mockedMiddleware1, mockedMiddleware2, mockedMiddleware3, mockedMiddleware4],
+      })({
         request: new Request('https://example.com'),
         params: {},
         context: {},
       }),
-    ).rejects.toThrow(Error);
+    ).rejects.toThrow(Response);
     expect(mockedMiddleware1).toBeCalledTimes(1);
     expect(mockedMiddleware2).toBeCalledTimes(1);
     expect(mockedMiddleware3).not.toBeCalled();
@@ -113,11 +117,7 @@ describe('composeMiddlewares()', () => {
     const mockedMiddleware2 = vi.fn();
     const mockedMiddleware3 = vi.fn();
     await expect(
-      composeMiddlewares(
-        mockedMiddleware1,
-        mockedMiddleware2,
-        mockedMiddleware3,
-      )({
+      composeMiddlewares({ middlewares: [mockedMiddleware1, mockedMiddleware2, mockedMiddleware3] })({
         request: new Request('https://example.com'),
         params: {},
         context: {},
@@ -181,7 +181,7 @@ describe('requireAuthenticatedUser()', () => {
           }),
         }),
       }),
-    ).rejects.toThrow(Error);
+    ).rejects.toThrow(ServerBaseError);
   });
 });
 
@@ -206,7 +206,7 @@ describe('requireAnonymousUser()', () => {
           }),
         }),
       }),
-    ).rejects.toThrow(Error);
+    ).rejects.toThrow(ServerBaseError);
 
     const existingSession: Awaited<ReturnType<typeof getAuthSessionById>> = {
       id: BigInt('39'),

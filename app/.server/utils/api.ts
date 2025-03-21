@@ -1,5 +1,5 @@
 import { apiErrorCodes, type ApiResponseError, type ApiResponseSuccess } from '~/services/api';
-import type { Nullishable } from '~/utils/types';
+import type { Nullishable, ValueOf } from '~/utils/types';
 
 export const wrapResponseBody = <T extends JSONValue = JSONValue>(
   data: T,
@@ -130,3 +130,26 @@ export const getGeneralServerErrorResponse = ({
     status: status || 500,
     ...rest,
   });
+
+export { apiErrorCodes } from '~/services/api';
+
+export const apiErrorResponseStatus: Record<ValueOf<typeof apiErrorCodes>, number> = Object.freeze({
+  [apiErrorCodes.BAD_REQUEST]: 400,
+  [apiErrorCodes.FORBIDDEN]: 403,
+  [apiErrorCodes.NOT_FOUND]: 404,
+  [apiErrorCodes.UNAUTHORIZED]: 401,
+  [apiErrorCodes.ANONYMOUS_REQUIRED]: 401,
+  [apiErrorCodes.INVALID_CREDENTIALS]: 401,
+  [apiErrorCodes.INVALID_REQUEST_BODY]: 400,
+  [apiErrorCodes.INVALID_REQUEST_QUERY_PARAMS]: 400,
+  [apiErrorCodes.UNKNOWN_ERROR]: 500,
+  [apiErrorCodes.INVALID_AUTH_TOKEN]: 401,
+  [apiErrorCodes.INVALID_AUTH_TOKEN_TYPE]: 401,
+  [apiErrorCodes.INVALID_AUTH_CODE]: 401,
+  [apiErrorCodes.INVALID_USERNAME]: 400,
+  [apiErrorCodes.INVALID_PASSWORD]: 400,
+  [apiErrorCodes.INVALID_EMAIL]: 400,
+  [apiErrorCodes.USERNAME_ALREADY_EXISTS]: 400,
+  [apiErrorCodes.EMAIL_ALREADY_EXISTS]: 400,
+  [apiErrorCodes.TOO_MANY_REQUESTS]: 429,
+});

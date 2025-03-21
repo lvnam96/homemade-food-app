@@ -7,6 +7,8 @@ import { pick } from '~/utils/data';
 import { db, type createPooledDBConnection } from '~/.server/db';
 // import { bigint, date, object, orNull, string } from '@adllang/jsonbinding';
 import { comparePassword, getSaltedPassword, hashPassword } from '~/.server/utils/password';
+import { DatabaseError } from '~/.server/utils/error';
+import { apiErrorCodes } from '~/.server/utils/api';
 
 // export const userJsonBinding = object<UserData>({
 //   id: bigint(),
@@ -98,7 +100,7 @@ export const createUser = async (
     //   .where(eq(userCredentialsInHf.email, normalizedEmail))
     //   .for('update');
     // if (existingUser.length) {
-    //   throw new Error(`Email ${user.email} is already registered by another user`);
+    //   throw new DatabaseError(`Email ${user.email} is already registered`);
     // }
 
     const { passwd, salt } = await getSaltedPassword(user.password);
@@ -125,7 +127,10 @@ export const createUser = async (
     if (!userCredentialsRes) {
       // FIXME: check if we must clean up the user record we just created
       // await tx.delete(usersInHf).where(eq(usersInHf.id, userRes.id));
-      throw new Error(`Email ${user.email} is already registered by another user`);
+      throw new DatabaseError({
+        publicMessage: `Email ${user.email} is already registered`,
+        code: apiErrorCodes.EMAIL_ALREADY_EXISTS,
+      });
     }
 
     return { ...userRes, email: userCredentialsRes.email };

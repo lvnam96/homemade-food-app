@@ -9,9 +9,11 @@ import {
   type ProduceJWT,
 } from 'jose';
 import { checkIsPlainObject } from '~/utils/data';
+import { invariant } from './invariant';
+import { AuthError } from './error';
+import { apiErrorCodes } from './api';
 
 import '~/.server/utils/import-env';
-import invariant from 'tiny-invariant';
 
 export const signJwt = (
   payload: Record<string, JSONValue> & JWTPayload,
@@ -29,15 +31,29 @@ export const signJwt = (
   },
 ) => {
   if (!secret) invariant(process.env.JWT_SECRET, 'Missing env variable `JWT_SECRET`');
-  if (!checkIsPlainObject(payload)) throw new Error('Payload must be an object');
-  return new SignJWT(payload)
-    .setProtectedHeader({ alg: algorithm })
-    .setIssuedAt()
-    .setExpirationTime(expirationTime)
-    .sign(secret || Buffer.from(process.env.JWT_SECRET));
+  if (!checkIsPlainObject(payload))
+    throw new AuthError({
+      privateMessage: 'Payload must be an object',
+      publicMessage: 'Invalid token payload',
+      code: apiErrorCodes.INVALID_AUTH_TOKEN,
+    });
+  try {
+    return new SignJWT(payload)
+      .setProtectedHeader({ alg: algorithm })
+      .setIssuedAt()
+      .setExpirationTime(expirationTime)
+      .sign(secret || Buffer.from(process.env.JWT_SECRET));
+  } catch (error) {
+    throw new AuthError({
+      ...(error as Error),
+      privateMessage: (error as Error).message,
+      code: apiErrorCodes.INVALID_AUTH_TOKEN,
+      publicMessage: 'Invalid token payload',
+    });
+  }
 };
 
-export const verifyJwt = <T extends Record<string, any> = JWTPayload>(
+export const verifyJwt = async <T extends Record<string, any> = JWTPayload>(
   token: Parameters<typeof jwtVerify>[0],
   {
     secret,
@@ -47,8 +63,17 @@ export const verifyJwt = <T extends Record<string, any> = JWTPayload>(
   } = {},
 ): Promise<JWTVerifyResult<T>> => {
   if (!secret) invariant(process.env.JWT_SECRET, 'Missing env variable `JWT_SECRET`');
-  return jwtVerify<T>(token, secret || Buffer.from(process.env.JWT_SECRET), {
-    algorithms: ['HS512', 'RS512'],
-    ...options,
-  });
+  try {
+    return await jwtVerify<T>(token, secret || Buffer.from(process.env.JWT_SECRET), {
+      algorithms: ['HS512', 'RS512'],
+      ...options,
+    });
+  } catch (error) {
+    throw new AuthError({
+      ...(error as Error),
+      privateMessage: (error as Error).message,
+      code: apiErrorCodes.INVALID_AUTH_TOKEN,
+      publicMessage: 'Invalid token',
+    });
+  }
 };

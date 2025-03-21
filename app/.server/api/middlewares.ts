@@ -1,6 +1,7 @@
 import type { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/node';
 import { verifyJwt } from '~/.server/utils/jwt';
 import {
+  apiErrorCodes,
   getBadRequestResponse,
   getBearerTokenFromAuthHeader,
   getForbiddenResponse,
@@ -8,11 +9,11 @@ import {
   getUnauthorizedResponse,
 } from '~/.server/utils/api';
 import { checkIsValidSessionInTokenPayload, verifyTokenClaims } from '~/.server/modules/auth';
-import { apiErrorCodes } from '~/services/api';
 import type { JWTVerifyResult } from 'jose';
 import type { MaybePromise } from '~/utils/types';
 import { getRequestCache } from '~/.server/utils/request-cache';
 import { parseFormData, type FileUploadHandler } from '@mjackson/form-data-parser';
+import { AuthError, getPublicErrorResponseData, handleError, ServerBaseError } from '~/.server/utils/error';
 
 const getRequestCacheForMiddleware = (...args: Parameters<typeof getRequestCache>) =>
   getRequestCache<{
@@ -32,47 +33,57 @@ const getRequestBearerTokenData = async <
   return null as unknown as Promise<T extends null ? null : JWTVerifyResult<P>>;
 };
 
+export const defaultApiRouteErrorHandler = (err: unknown, request: Request) => {
+  // Middleware can throw a Response to abort early:
+  if (err instanceof Response) throw err; // TODO: decide to return or rethrow Response object
+
+  if (err instanceof ServerBaseError) {
+    handleError(err, { request });
+    throw getGeneralServerErrorResponse(getPublicErrorResponseData(err));
+  } else throw getGeneralServerErrorResponse(); // for other errors that not wrapped as custom error
+};
 /**
  * NOTE: Only applicable to middlewares that have same signature as `(args: ActionFunctionArgs | LoaderFunctionArgs) => Promise<any>`
  *
  * Usage with action/loader:
  * ```ts
- *  export const action = composeMiddleware(
- *    requireAuthenticatedUser,
- *    requireFormBody(),
- *    async ({ request, cache }) => {
- *      // Access `formData` in `cache` which was set by `requireFormBody`
- *      // Access `tokenPayload` in `cache` which was set by `requireAuthenticatedUser`
- *      // Rest of your action logic
- *    }
- *  );
+ *  export const action = composeMiddleware({
+ *    middlewares: [
+ *      requireAuthenticatedUser,
+ *      requireFormBody(),
+ *      async ({ request, cache }) => {
+ *        // Access `formData` in `cache` which was set by `requireFormBody`
+ *        // Access `tokenPayload` in `cache` which was set by `requireAuthenticatedUser`
+ *        // Rest of your action logic
+ *      }
+ *    ]
+ * });
  * ```
  */
 export const composeMiddlewares =
-  (
-    ...middlewares: Array<
+  ({
+    middlewares,
+    handleError = defaultApiRouteErrorHandler,
+  }: {
+    middlewares: Array<
       (
         args: (ActionFunctionArgs | LoaderFunctionArgs) & { cache: ReturnType<typeof getRequestCacheForMiddleware> },
       ) => Promise<any>
-    >
-  ) =>
+    >;
+    handleError?: (err: unknown, req: Request) => Response;
+  }) =>
   async (args: ActionFunctionArgs | LoaderFunctionArgs) => {
-    const cache = getRequestCacheForMiddleware(args.request);
-    const enhancedArgs = { ...args, cache };
+    try {
+      const cache = getRequestCacheForMiddleware(args.request);
+      const enhancedArgs = { ...args, cache };
 
-    for (const middleware of middlewares) {
-      try {
+      for (const middleware of middlewares) {
         const result = await middleware(enhancedArgs);
-
         // Middleware can return a Response to respond early:
         if (result instanceof Response) return result;
-      } catch (err) {
-        // Middleware can throw a Response to abort early:
-        if (err instanceof Response) throw err; // TODO: decide to return or rethrow Response object
-
-        if (err instanceof Error) console.error(err);
-        throw getGeneralServerErrorResponse();
       }
+    } catch (err) {
+      return handleError(err, args.request);
     }
   };
 
@@ -101,27 +112,17 @@ export const requireAuthenticatedUser = async ({ request }: Pick<ActionFunctionA
   const { token, tokenPayload } = await getRequestData<AccessTokenPayload>({ request });
 
   if (!token)
-    throw getUnauthorizedResponse({
+    throw new AuthError({
       code: apiErrorCodes.INVALID_AUTH_TOKEN,
-      message: 'Missing token',
+      publicMessage: 'Missing token',
     });
   if (!tokenPayload)
-    throw getUnauthorizedResponse({
+    throw new AuthError({
       code: apiErrorCodes.INVALID_AUTH_TOKEN,
-      message: 'Invalid token payload',
+      publicMessage: 'Missing token payload',
     });
 
-  try {
-    await verifyTokenClaims({ tokenPayload });
-  } catch (err) {
-    console.error(err);
-    if (err instanceof Error) {
-      throw getUnauthorizedResponse({
-        code: apiErrorCodes.INVALID_AUTH_TOKEN,
-        message: 'Invalid token claims',
-      });
-    }
-  }
+  await verifyTokenClaims({ tokenPayload });
   await requireValidSessionInToken({ request });
 
   return { token, tokenPayload };

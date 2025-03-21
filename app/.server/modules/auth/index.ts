@@ -1,6 +1,6 @@
 // import { Authenticator } from 'remix-auth';
 // import { type ProviderUser } from './providers/provider';
-import invariant from 'tiny-invariant';
+import { invariant } from '~/.server/utils/invariant';
 import { signJwt, verifyJwt } from '~/.server/utils/jwt';
 import { createUser, verifyUserPassword } from './models/user';
 import { createAuthSession, deleteAuthSessionById, getAuthSessionById } from './models/session';
@@ -8,6 +8,8 @@ import { makeObjectPropsJsonCompatible } from '~/utils/data';
 import type { UserCredentials, UserCredentialsForInsert, UserDataForInsert } from './types';
 
 import '~/.server/utils/import-env';
+import { AuthError, LogicError } from '~/.server/utils/error';
+import { apiErrorCodes } from '~/services/api';
 
 export * from './models/user';
 export * from './models/session';
@@ -52,14 +54,22 @@ export const verifyTokenClaims = async ({ tokenPayload }: { tokenPayload: Shared
 
   // Validate the token's expiration (exp) and not before (nbf) claims:
   if ((tokenPayload.exp && tokenPayload.exp < currentTime) || (tokenPayload.nbf && tokenPayload.nbf > currentTime)) {
-    throw new Error('Token is expired or not yet valid');
+    throw new AuthError({
+      privateMessage: 'Token is expired or not yet valid',
+      code: apiErrorCodes.INVALID_AUTH_TOKEN,
+      publicMessage: 'Invalid token claims',
+    });
   }
 
   // Validate the token's authorized party (azp) claim:
   invariant(import.meta.env.PUBLIC_ORIGIN, 'Missing env variable `PUBLIC_ORIGIN`');
   const permittedOrigins = [import.meta.env.PUBLIC_ORIGIN];
   if (typeof tokenPayload.azp === 'string' && !permittedOrigins.includes(tokenPayload.azp)) {
-    throw new Error('Invalid `azp` claim');
+    throw new AuthError({
+      privateMessage: 'Invalid `azp` claim',
+      code: apiErrorCodes.INVALID_AUTH_TOKEN,
+      publicMessage: 'Invalid token claims',
+    });
   }
 };
 
@@ -82,11 +92,21 @@ export const checkIsValidSessionInTokenPayload = async <
 };
 
 export const signUserIn = async ({ email, password }: { email: UserCredentials['email']; password: string }) => {
-  invariant(email, 'Invalid credentials');
-  invariant(password, 'Invalid credentials');
+  invariant(email, 'Missing email', {
+    code: apiErrorCodes.INVALID_CREDENTIALS,
+    publicMessage: 'Invalid credentials',
+  });
+  invariant(password, 'Missing password', {
+    code: apiErrorCodes.INVALID_CREDENTIALS,
+    publicMessage: 'Invalid credentials',
+  });
 
   const user = await verifyUserPassword(email, password);
-  if (!user) throw new Error('Invalid credentials');
+  if (!user)
+    throw new LogicError({
+      code: apiErrorCodes.INVALID_CREDENTIALS,
+      publicMessage: 'Invalid credentials',
+    });
 
   const session = await createAuthSession({
     userId: user.id.toString(),
@@ -123,9 +143,18 @@ export const signUserUp = async (
     Omit<UserDataForInsert, 'createdAt' | 'updatedAt' | 'deletedAt'>,
   { pooledDBInstance }: Parameters<typeof createUser>[1],
 ) => {
-  invariant(user, 'User data is required');
-  invariant(user.email, 'Email is required');
-  invariant(user.password, 'Password is required');
+  invariant(user, 'User data is required', {
+    code: apiErrorCodes.BAD_REQUEST,
+    publicMessage: 'Missing user data',
+  });
+  invariant(user.email, 'Email is required', {
+    code: apiErrorCodes.INVALID_CREDENTIALS,
+    publicMessage: 'Email is required',
+  });
+  invariant(user.password, 'Password is required', {
+    code: apiErrorCodes.INVALID_CREDENTIALS,
+    publicMessage: 'Password is required',
+  });
 
   user.displayedName = user.displayedName || user.email;
 

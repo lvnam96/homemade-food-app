@@ -1,16 +1,20 @@
 import { type ActionFunctionArgs } from '@remix-run/node';
 import {
+  apiErrorCodes,
   getBadRequestResponse,
   getBearerTokenFromAuthHeader,
-  getGeneralServerErrorResponse,
-  getUnauthorizedResponse,
   wrapResponseBody,
 } from '~/.server/utils/api';
 import { createPooledDBConnection } from '~/.server/db';
 import { makeObjectPropsJsonCompatible } from '~/utils/data';
-import { composeMiddlewares, requireAnonymousUser, requireJsonBody, requireValidTokenType } from '../middlewares';
+import {
+  composeMiddlewares,
+  defaultApiRouteErrorHandler,
+  requireAnonymousUser,
+  requireJsonBody,
+  requireValidTokenType,
+} from '../middlewares';
 import { generateAccessToken, generateRefreshToken, signUserIn, signUserOut, signUserUp } from '~/.server/modules/auth';
-import { apiErrorCodes } from '~/services/api';
 
 // export const loader = async ({ request }: LoaderFunctionArgs) => {};
 
@@ -21,40 +25,40 @@ export const action = async (actionArgs: ActionFunctionArgs) => {
   const target = url.searchParams.get('target');
 
   if (request.method === 'POST' && action === 'signup' && target === 'account') {
-    try {
-      return await composeMiddlewares(requireJsonBody(), requireAnonymousUser, async ({ cache }) => {
-        const json = cache.get('json')!;
-        const { db, pool } = createPooledDBConnection();
-        const newUserData = await signUserUp(json as any, {
-          pooledDBInstance: db,
-        });
-        await pool.end();
-        return Response.json(wrapResponseBody(makeObjectPropsJsonCompatible(newUserData)));
-      })(actionArgs);
-    } catch (err) {
-      if (err instanceof Response) throw err;
-      console.error(err);
-      return getGeneralServerErrorResponse();
-    }
+    return await composeMiddlewares({
+      middlewares: [
+        requireJsonBody(),
+        requireAnonymousUser,
+        async ({ cache }) => {
+          const json = cache.get('json')!;
+          const { db, pool } = createPooledDBConnection();
+          const newUserData = await signUserUp(json as any, {
+            pooledDBInstance: db,
+          });
+          await pool.end();
+          return Response.json(wrapResponseBody(makeObjectPropsJsonCompatible(newUserData)));
+        },
+      ],
+    })(actionArgs);
   } else if (request.method === 'POST' && action === 'signin') {
-    try {
-      return await composeMiddlewares(requireJsonBody(), requireAnonymousUser, async ({ cache }) => {
-        const json = cache.get('json')!;
-        const { jwtPayload } = await signUserIn(json as any);
-        return Response.json(
-          wrapResponseBody(
-            makeObjectPropsJsonCompatible({
-              accessToken: await generateAccessToken(jwtPayload),
-              refreshToken: await generateRefreshToken(jwtPayload),
-            }),
-          ),
-        );
-      })(actionArgs);
-    } catch (err) {
-      if (err instanceof Response) throw err;
-      console.error(err);
-      return getUnauthorizedResponse();
-    }
+    return await composeMiddlewares({
+      middlewares: [
+        requireJsonBody(),
+        requireAnonymousUser,
+        async ({ cache }) => {
+          const json = cache.get('json')!;
+          const { jwtPayload } = await signUserIn(json as any);
+          return Response.json(
+            wrapResponseBody(
+              makeObjectPropsJsonCompatible({
+                accessToken: await generateAccessToken(jwtPayload),
+                refreshToken: await generateRefreshToken(jwtPayload),
+              }),
+            ),
+          );
+        },
+      ],
+    })(actionArgs);
   } else if (request.method === 'POST' && action === 'signout') {
     try {
       await requireValidTokenType({
@@ -70,9 +74,7 @@ export const action = async (actionArgs: ActionFunctionArgs) => {
 
       await signUserOut(refreshToken); // If this fails, we still need to delete the session/tokens from the client and it doesn't do any harm staying in the db anyway.
     } catch (err) {
-      if (err instanceof Response) throw err;
-      console.error(err);
-      return getGeneralServerErrorResponse();
+      defaultApiRouteErrorHandler(err, request);
     }
 
     return new Response(null, { status: 204 });
