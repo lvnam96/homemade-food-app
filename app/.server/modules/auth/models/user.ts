@@ -4,7 +4,12 @@ import { eq, getTableName, sql } from 'drizzle-orm';
 import { userCredentialsInHf, usersInHf } from '~/.server/db/schema';
 import type { UserCredentials, UserCredentialsForInsert, UserDataForInsert } from '../types';
 import { pick } from '~/utils/data';
-import { db, type createPooledDBConnection } from '~/.server/db';
+import {
+  db,
+  type DrizzleDBInstance,
+  type DrizzleDBInstanceInTransaction,
+  type DrizzleDBPooledInstance,
+} from '~/.server/db';
 // import { bigint, date, object, orNull, string } from '@adllang/jsonbinding';
 import { comparePassword, getSaltedPassword, hashPassword } from '~/.server/utils/password';
 import { DatabaseError } from '~/.server/utils/error';
@@ -29,7 +34,7 @@ export const getUserById = async (
   {
     dbInstance = db,
   }: {
-    dbInstance?: typeof db | Parameters<Parameters<(typeof db)['transaction']>[0]>[0];
+    dbInstance?: DrizzleDBInstance | DrizzleDBInstanceInTransaction;
   } = {
     dbInstance: db,
   },
@@ -59,7 +64,7 @@ export const deleteUserByEmail = async (
   {
     dbInstance = db,
   }: {
-    dbInstance?: typeof db | Parameters<Parameters<(typeof db)['transaction']>[0]>[0];
+    dbInstance?: DrizzleDBInstance | DrizzleDBInstanceInTransaction;
   } = {
     dbInstance: db,
   },
@@ -86,7 +91,7 @@ export const createUser = async (
   {
     pooledDBInstance,
   }: {
-    pooledDBInstance: ReturnType<typeof createPooledDBConnection>['db'];
+    pooledDBInstance: DrizzleDBPooledInstance;
   },
 ) => {
   return await pooledDBInstance.transaction(async (tx) => {
@@ -143,7 +148,7 @@ export const verifyUserPassword = async (
   {
     dbInstance = db,
   }: {
-    dbInstance?: typeof db | Parameters<Parameters<(typeof db)['transaction']>[0]>[0];
+    dbInstance?: DrizzleDBInstance | DrizzleDBInstanceInTransaction;
   } = {
     dbInstance: db,
   },
@@ -199,7 +204,7 @@ export const resetUserPassword = async (
   {
     dbInstance = db,
   }: {
-    dbInstance?: typeof db | Parameters<Parameters<(typeof db)['transaction']>[0]>[0];
+    dbInstance?: DrizzleDBInstance | DrizzleDBInstanceInTransaction;
   } = {
     dbInstance: db,
   },

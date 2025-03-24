@@ -1,19 +1,20 @@
 // NOTE: `dbInstance` prop applies "dependencies injection" pattern for testing
 
 import { and, eq, gt } from 'drizzle-orm';
-import { db } from '~/.server/db';
+import { db, type DrizzleDBInstanceInTransaction } from '~/.server/db';
 import { authSessionsInHf } from '~/.server/db/schema';
+import type { Session } from '../types';
 
 export const getAuthSessionById = async (
   sessionId: string,
   {
     dbInstance = db,
   }: {
-    dbInstance?: typeof db;
+    dbInstance?: typeof db | DrizzleDBInstanceInTransaction;
   } = {
     dbInstance: db,
   },
-) =>
+): Promise<Session | null> =>
   // `SELECT * FROM ${authSessionsInHf} WHERE ${authSessionsInHf.id} = ${id}`
   (
     await dbInstance
@@ -27,11 +28,11 @@ export const deleteAuthSessionById = async (
   {
     dbInstance = db,
   }: {
-    dbInstance?: typeof db;
+    dbInstance?: typeof db | DrizzleDBInstanceInTransaction;
   } = {
     dbInstance: db,
   },
-) =>
+): Promise<Session | null> =>
   // `DELETE FROM ${authSessionsInHf} WHERE ${authSessionsInHf.id} = ${id} RETURNING *`;
   (
     await dbInstance
@@ -45,11 +46,11 @@ export const getAllAuthSessionsByUserId = async (
   {
     dbInstance = db,
   }: {
-    dbInstance?: typeof db;
+    dbInstance?: typeof db | DrizzleDBInstanceInTransaction;
   } = {
     dbInstance: db,
   },
-) =>
+): Promise<Session[]> =>
   // `SELECT * FROM ${authSessionsInHf} WHERE ${authSessionsInHf.userId} = ${userId}`
   await dbInstance
     .select()
@@ -61,11 +62,11 @@ export const deleteAllAuthSessionsByUserId = async (
   {
     dbInstance = db,
   }: {
-    dbInstance?: typeof db;
+    dbInstance?: typeof db | DrizzleDBInstanceInTransaction;
   } = {
     dbInstance: db,
   },
-) =>
+): Promise<Session[]> =>
   // `DELETE FROM ${authSessionsInHf} WHERE ${authSessionsInHf.userId} = ${userId} RETURNING *`;
   await dbInstance
     .delete(authSessionsInHf)
@@ -83,11 +84,11 @@ export const createAuthSession = async (
   {
     dbInstance = db,
   }: {
-    dbInstance?: typeof db;
+    dbInstance?: typeof db | DrizzleDBInstanceInTransaction;
   } = {
     dbInstance: db,
   },
-) =>
+): Promise<Session> =>
   // `INSERT INTO ${authSessionsInHf} (${authSessionsInHf.expiredAt}, ${authSessionsInHf.userId}) VALUES (${expiredAt}, ${userId}) RETURNING *`
   (
     await dbInstance

@@ -60,3 +60,7 @@ export const createPooledDBConnection = () => {
   });
   return { pool, db };
 };
+
+export type DrizzleDBPooledInstance = ReturnType<typeof createPooledDBConnection>['db'];
+export type DrizzleDBInstance = typeof db | DrizzleDBPooledInstance;
+export type DrizzleDBInstanceInTransaction = Parameters<Parameters<DrizzleDBPooledInstance['transaction']>[0]>[0];
