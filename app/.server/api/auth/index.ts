@@ -14,7 +14,7 @@ import {
   requireJsonBody,
   requireValidTokenType,
 } from '../middlewares';
-import { generateAccessToken, generateRefreshToken, signUserIn, signUserOut, signUserUp } from '~/.server/modules/auth';
+import { signUserIn, signUserOut, signUserUp } from '~/.server/modules/auth';
 
 // export const loader = async ({ request }: LoaderFunctionArgs) => {};
 
@@ -47,15 +47,8 @@ export const action = async (actionArgs: ActionFunctionArgs) => {
         requireAnonymousUser,
         async ({ cache }) => {
           const json = cache.get('json')!;
-          const { jwtPayload } = await signUserIn(json as any);
-          return Response.json(
-            wrapResponseBody(
-              makeObjectPropsJsonCompatible({
-                accessToken: await generateAccessToken(jwtPayload),
-                refreshToken: await generateRefreshToken(jwtPayload),
-              }),
-            ),
-          );
+          const { accessToken, refreshToken } = await signUserIn(json as any);
+          return Response.json(wrapResponseBody({ accessToken, refreshToken }));
         },
       ],
     })(actionArgs);

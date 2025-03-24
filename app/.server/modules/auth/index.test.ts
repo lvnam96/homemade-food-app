@@ -1,6 +1,8 @@
 import { afterAll, afterEach, describe, expect, it, vi } from 'vitest';
 import {
   checkIsValidSessionInTokenPayload,
+  createNewPairOfTokens,
+  createPayloadForNewTokens,
   generateAccessToken,
   generateRefreshToken,
   getSessionExpirationDate,
@@ -57,6 +59,27 @@ describe('generateRefreshToken()', () => {
     const token = await generateRefreshToken({ sessionId: '1', user: { id: '1', email: '1' } });
     expect(typeof token).toBe('string');
     await expect(verifyJwt(token)).resolves.not.toThrow();
+  });
+});
+
+describe('createPayloadForNewTokens()', () => {
+  it('should return payload in expected format', () => {
+    const payload = createPayloadForNewTokens({ sessionId: BigInt('1'), userId: BigInt('1'), email: 'a@a.com' });
+    expect(payload).toMatchObject({ sessionId: BigInt('1'), user: { id: BigInt('1'), email: 'a@a.com' } });
+  });
+});
+
+describe('createNewPairOfTokens()', () => {
+  it('should create a pair of tokens', async () => {
+    const { accessToken, refreshToken } = await createNewPairOfTokens({
+      sessionId: BigInt('1'),
+      user: { id: BigInt('1'), email: 'a@a.com' },
+    });
+
+    expect(typeof accessToken).toBe('string');
+    expect(typeof refreshToken).toBe('string');
+    await expect(verifyJwt(accessToken)).resolves.not.toThrow();
+    await expect(verifyJwt(refreshToken)).resolves.not.toThrow();
   });
 });
 

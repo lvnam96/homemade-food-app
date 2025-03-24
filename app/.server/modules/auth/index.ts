@@ -5,7 +5,7 @@ import { signJwt, verifyJwt } from '~/.server/utils/jwt';
 import { createUser, verifyUserPassword } from './models/user';
 import { createAuthSession, deleteAuthSessionById, getAuthSessionById } from './models/session';
 import { makeObjectPropsJsonCompatible } from '~/utils/data';
-import type { UserCredentials, UserCredentialsForInsert, UserDataForInsert } from './types';
+import type { Session, UserCredentials, UserCredentialsForInsert, UserData, UserDataForInsert } from './types';
 
 import '~/.server/utils/import-env';
 import { AuthError, LogicError } from '~/.server/utils/error';
@@ -91,6 +91,30 @@ export const checkIsValidSessionInTokenPayload = async <
   return !!sessionId && (await getAuthSessionById(sessionId))?.userId?.toString() === tokenPayload.payload?.user.id;
 };
 
+export const createPayloadForNewTokens = ({
+  userId,
+  email,
+  sessionId,
+}: {
+  userId: UserData['id'];
+  email: UserCredentials['email'];
+  sessionId: Session['id'];
+}) => ({
+  sessionId,
+  user: {
+    id: userId,
+    email: email,
+  },
+});
+
+export const createNewPairOfTokens = async (payload: ReturnType<typeof createPayloadForNewTokens>) => {
+  const jsonizablePayload = makeObjectPropsJsonCompatible(payload);
+  return {
+    accessToken: await generateAccessToken(jsonizablePayload),
+    refreshToken: await generateRefreshToken(jsonizablePayload),
+  };
+};
+
 export const signUserIn = async ({ email, password }: { email: UserCredentials['email']; password: string }) => {
   invariant(email, 'Missing email', {
     code: apiErrorCodes.INVALID_CREDENTIALS,
@@ -112,17 +136,18 @@ export const signUserIn = async ({ email, password }: { email: UserCredentials['
     userId: user.id.toString(),
     expiredAt: getSessionExpirationDate(),
   });
-  const jwtPayload = makeObjectPropsJsonCompatible({
-    sessionId: session.id,
-    user: {
-      id: user.id,
-      email: email,
-    },
-  });
+  const { accessToken, refreshToken } = await createNewPairOfTokens(
+    createPayloadForNewTokens({
+      sessionId: session.id,
+      userId: user.id,
+      email,
+    }),
+  );
   return {
     user: user,
     session,
-    jwtPayload,
+    accessToken,
+    refreshToken,
   };
 };
 
