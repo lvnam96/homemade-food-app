@@ -12,7 +12,7 @@ export const verificationTypeInHf = hf.enum("verification_type", ['email', 'phon
 
 export const authSessionsInHf = hf.table("auth_sessions", {
 	id: bigserial({ mode: "bigint" }).primaryKey().notNull(),
-	userId: bigint("user_id", { mode: "bigint" }),
+	userId: bigint("user_id", { mode: "bigint" }).notNull(),
 	expiredAt: timestamp("expired_at", { withTimezone: true, mode: 'date' }).notNull(),
 	createdAt: timestamp("created_at", { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
 	updatedAt: timestamp("updated_at", { withTimezone: true, mode: 'date' }),

@@ -1,6 +1,6 @@
 CREATE SCHEMA "hf";
 
-CREATE TYPE "hf"."role_name" AS ENUM(
+CREATE TYPE "hf"."role_name" AS ENUM (
   'aDMin',
   'created',
   'merchant_owner',
@@ -9,15 +9,37 @@ CREATE TYPE "hf"."role_name" AS ENUM(
   'guest'
 );
 
-CREATE TYPE "hf"."merchant_status" AS ENUM('online', 'created', 'offline', 'shutdown');
+CREATE TYPE "hf"."merchant_status" AS ENUM (
+  'online',
+  'created',
+  'offline',
+  'shutdown'
+);
 
-CREATE TYPE "hf"."media_type" AS ENUM('image', 'video', 'audio', 'pdf', 'other');
+CREATE TYPE "hf"."media_type" AS ENUM (
+  'image',
+  'video',
+  'audio',
+  'pdf',
+  'other'
+);
 
-CREATE TYPE "hf"."payment_status" AS ENUM('unpaid', 'paying', 'error', 'paid');
+CREATE TYPE "hf"."payment_status" AS ENUM (
+  'unpaid',
+  'paying',
+  'error',
+  'paid'
+);
 
-CREATE TYPE "hf"."payment_method" AS ENUM('COD', 'online_banking');
+CREATE TYPE "hf"."payment_method" AS ENUM (
+  'COD',
+  'online_banking'
+);
 
-CREATE TYPE "hf"."verification_type" AS ENUM('email', 'phone');
+CREATE TYPE "hf"."verification_type" AS ENUM (
+  'email',
+  'phone'
+);
 
 CREATE TABLE "hf"."roles" (
   "id" serial PRIMARY KEY,
@@ -52,7 +74,7 @@ CREATE TABLE "hf"."user_addresses" (
 
 CREATE TABLE "hf"."auth_sessions" (
   "id" bigserial PRIMARY KEY,
-  "user_id" bigint,
+  "user_id" bigint NOT NULL,
   "expired_at" timestamptz NOT NULL,
   "created_at" timestamptz NOT NULL DEFAULT (now()),
   "updated_at" timestamptz
@@ -77,7 +99,7 @@ CREATE TABLE "hf"."addresses" (
   "street_address" varchar(256) NOT NULL,
   "district_id" varchar NOT NULL,
   "province_id" varchar NOT NULL,
-  "coordinates" POINT,
+  "coordinates" point,
   "note" varchar(256),
   "created_at" timestamptz NOT NULL DEFAULT (now()),
   "updated_at" timestamptz,
@@ -211,7 +233,7 @@ CREATE TABLE "hf"."shipping_addresses" (
   "street_address" varchar(256) NOT NULL,
   "district_id" varchar NOT NULL,
   "province_id" varchar NOT NULL,
-  "coordinates" POINT,
+  "coordinates" point,
   "note" varchar(256)
 );
 
@@ -382,107 +404,72 @@ COMMENT ON COLUMN "hf"."shipping_addresses"."note" IS 'noted by customer';
 
 COMMENT ON COLUMN "hf"."order_items"."discount_amount" IS 'amount of money discounted from original calculated from hf.discounts.discount_percent';
 
-ALTER TABLE "hf"."user_credentials"
-ADD FOREIGN KEY ("user_id") REFERENCES "hf"."users" ("id") ON DELETE CASCADE;
+ALTER TABLE "hf"."user_credentials" ADD FOREIGN KEY ("user_id") REFERENCES "hf"."users" ("id") ON DELETE CASCADE;
 
-ALTER TABLE "hf"."auth_sessions"
-ADD FOREIGN KEY ("user_id") REFERENCES "hf"."users" ("id") ON DELETE CASCADE;
+ALTER TABLE "hf"."auth_sessions" ADD FOREIGN KEY ("user_id") REFERENCES "hf"."users" ("id") ON DELETE CASCADE;
 
-ALTER TABLE "hf"."merchants"
-ADD FOREIGN KEY ("owner_id") REFERENCES "hf"."users" ("id") ON DELETE RESTRICT;
+ALTER TABLE "hf"."merchants" ADD FOREIGN KEY ("owner_id") REFERENCES "hf"."users" ("id") ON DELETE RESTRICT;
 
-ALTER TABLE "hf"."products_to_categories"
-ADD FOREIGN KEY ("product_id") REFERENCES "hf"."products" ("id") ON DELETE CASCADE;
+ALTER TABLE "hf"."products_to_categories" ADD FOREIGN KEY ("product_id") REFERENCES "hf"."products" ("id") ON DELETE CASCADE;
 
-ALTER TABLE "hf"."products_to_categories"
-ADD FOREIGN KEY ("category_id") REFERENCES "hf"."product_categories" ("id") ON DELETE CASCADE;
+ALTER TABLE "hf"."products_to_categories" ADD FOREIGN KEY ("category_id") REFERENCES "hf"."product_categories" ("id") ON DELETE CASCADE;
 
-ALTER TABLE "hf"."orders"
-ADD FOREIGN KEY ("discount_id") REFERENCES "hf"."discounts" ("id") ON DELETE RESTRICT;
+ALTER TABLE "hf"."orders" ADD FOREIGN KEY ("discount_id") REFERENCES "hf"."discounts" ("id") ON DELETE RESTRICT;
 
-ALTER TABLE "provinces"
-ADD CONSTRAINT "provinces_administrative_region_id_fkey" FOREIGN KEY ("administrative_region_id") REFERENCES "administrative_regions" ("id");
+ALTER TABLE "provinces" ADD CONSTRAINT "provinces_administrative_region_id_fkey" FOREIGN KEY ("administrative_region_id") REFERENCES "administrative_regions" ("id");
 
-ALTER TABLE "provinces"
-ADD CONSTRAINT "provinces_administrative_unit_id_fkey" FOREIGN KEY ("administrative_unit_id") REFERENCES "administrative_units" ("id");
+ALTER TABLE "provinces" ADD CONSTRAINT "provinces_administrative_unit_id_fkey" FOREIGN KEY ("administrative_unit_id") REFERENCES "administrative_units" ("id");
 
-ALTER TABLE "districts"
-ADD CONSTRAINT "districts_administrative_unit_id_fkey" FOREIGN KEY ("administrative_unit_id") REFERENCES "administrative_units" ("id");
+ALTER TABLE "districts" ADD CONSTRAINT "districts_administrative_unit_id_fkey" FOREIGN KEY ("administrative_unit_id") REFERENCES "administrative_units" ("id");
 
-ALTER TABLE "districts"
-ADD CONSTRAINT "districts_province_code_fkey" FOREIGN KEY ("province_code") REFERENCES "provinces" ("code");
+ALTER TABLE "districts" ADD CONSTRAINT "districts_province_code_fkey" FOREIGN KEY ("province_code") REFERENCES "provinces" ("code");
 
-ALTER TABLE "wards"
-ADD CONSTRAINT "wards_administrative_unit_id_fkey" FOREIGN KEY ("administrative_unit_id") REFERENCES "administrative_units" ("id");
+ALTER TABLE "wards" ADD CONSTRAINT "wards_administrative_unit_id_fkey" FOREIGN KEY ("administrative_unit_id") REFERENCES "administrative_units" ("id");
 
-ALTER TABLE "wards"
-ADD CONSTRAINT "wards_district_code_fkey" FOREIGN KEY ("district_code") REFERENCES "districts" ("code");
+ALTER TABLE "wards" ADD CONSTRAINT "wards_district_code_fkey" FOREIGN KEY ("district_code") REFERENCES "districts" ("code");
 
-ALTER TABLE "hf"."user_addresses"
-ADD FOREIGN KEY ("user_id") REFERENCES "hf"."users" ("id") ON DELETE CASCADE;
+ALTER TABLE "hf"."user_addresses" ADD FOREIGN KEY ("user_id") REFERENCES "hf"."users" ("id") ON DELETE CASCADE;
 
-ALTER TABLE "hf"."user_addresses"
-ADD FOREIGN KEY ("address_id") REFERENCES "hf"."addresses" ("id") ON DELETE RESTRICT;
+ALTER TABLE "hf"."user_addresses" ADD FOREIGN KEY ("address_id") REFERENCES "hf"."addresses" ("id") ON DELETE RESTRICT;
 
-ALTER TABLE "hf"."addresses"
-ADD FOREIGN KEY ("district_id") REFERENCES "districts" ("code") ON DELETE RESTRICT;
+ALTER TABLE "hf"."addresses" ADD FOREIGN KEY ("district_id") REFERENCES "districts" ("code") ON DELETE RESTRICT;
 
-ALTER TABLE "hf"."addresses"
-ADD FOREIGN KEY ("province_id") REFERENCES "provinces" ("code") ON DELETE RESTRICT;
+ALTER TABLE "hf"."addresses" ADD FOREIGN KEY ("province_id") REFERENCES "provinces" ("code") ON DELETE RESTRICT;
 
-ALTER TABLE "hf"."user_roles"
-ADD FOREIGN KEY ("user_id") REFERENCES "hf"."users" ("id") ON DELETE CASCADE;
+ALTER TABLE "hf"."user_roles" ADD FOREIGN KEY ("user_id") REFERENCES "hf"."users" ("id") ON DELETE CASCADE;
 
-ALTER TABLE "hf"."user_roles"
-ADD FOREIGN KEY ("assigned_by") REFERENCES "hf"."users" ("id") ON DELETE SET NULL;
+ALTER TABLE "hf"."user_roles" ADD FOREIGN KEY ("assigned_by") REFERENCES "hf"."users" ("id") ON DELETE SET NULL;
 
-ALTER TABLE "hf"."user_roles"
-ADD FOREIGN KEY ("role_id") REFERENCES "hf"."roles" ("id") ON DELETE CASCADE;
+ALTER TABLE "hf"."user_roles" ADD FOREIGN KEY ("role_id") REFERENCES "hf"."roles" ("id") ON DELETE CASCADE;
 
-ALTER TABLE "hf"."merchant_contact_info"
-ADD FOREIGN KEY ("merchant_id") REFERENCES "hf"."merchants" ("id") ON DELETE CASCADE;
+ALTER TABLE "hf"."merchant_contact_info" ADD FOREIGN KEY ("merchant_id") REFERENCES "hf"."merchants" ("id") ON DELETE CASCADE;
 
-ALTER TABLE "hf"."merchants"
-ADD FOREIGN KEY ("address_id") REFERENCES "hf"."addresses" ("id") ON DELETE CASCADE;
+ALTER TABLE "hf"."merchants" ADD FOREIGN KEY ("address_id") REFERENCES "hf"."addresses" ("id") ON DELETE CASCADE;
 
-ALTER TABLE "hf"."merchant_payment_methods"
-ADD FOREIGN KEY ("merchant_id") REFERENCES "hf"."merchants" ("id") ON DELETE CASCADE;
+ALTER TABLE "hf"."merchant_payment_methods" ADD FOREIGN KEY ("merchant_id") REFERENCES "hf"."merchants" ("id") ON DELETE CASCADE;
 
-ALTER TABLE "hf"."products"
-ADD FOREIGN KEY ("merchant_id") REFERENCES "hf"."merchants" ("id") ON DELETE CASCADE;
+ALTER TABLE "hf"."products" ADD FOREIGN KEY ("merchant_id") REFERENCES "hf"."merchants" ("id") ON DELETE CASCADE;
 
-ALTER TABLE "hf"."products"
-ADD FOREIGN KEY ("discount_id") REFERENCES "hf"."discounts" ("id") ON DELETE RESTRICT;
+ALTER TABLE "hf"."products" ADD FOREIGN KEY ("discount_id") REFERENCES "hf"."discounts" ("id") ON DELETE RESTRICT;
 
-ALTER TABLE "hf"."product_media"
-ADD FOREIGN KEY ("product_id") REFERENCES "hf"."products" ("id") ON DELETE CASCADE;
+ALTER TABLE "hf"."product_media" ADD FOREIGN KEY ("product_id") REFERENCES "hf"."products" ("id") ON DELETE CASCADE;
 
-ALTER TABLE "hf"."follows"
-ADD FOREIGN KEY ("following_user_id") REFERENCES "hf"."users" ("id") ON DELETE CASCADE;
+ALTER TABLE "hf"."follows" ADD FOREIGN KEY ("following_user_id") REFERENCES "hf"."users" ("id") ON DELETE CASCADE;
 
-ALTER TABLE "hf"."follows"
-ADD FOREIGN KEY ("followed_merchant_id") REFERENCES "hf"."merchants" ("id") ON DELETE CASCADE;
+ALTER TABLE "hf"."follows" ADD FOREIGN KEY ("followed_merchant_id") REFERENCES "hf"."merchants" ("id") ON DELETE CASCADE;
 
-ALTER TABLE "hf"."merchant_posts"
-ADD FOREIGN KEY ("merchant_id") REFERENCES "hf"."merchants" ("id") ON DELETE CASCADE;
+ALTER TABLE "hf"."merchant_posts" ADD FOREIGN KEY ("merchant_id") REFERENCES "hf"."merchants" ("id") ON DELETE CASCADE;
 
-ALTER TABLE "hf"."product_categories"
-ADD FOREIGN KEY ("merchant_id") REFERENCES "hf"."merchants" ("id") ON DELETE CASCADE;
+ALTER TABLE "hf"."product_categories" ADD FOREIGN KEY ("merchant_id") REFERENCES "hf"."merchants" ("id") ON DELETE CASCADE;
 
-ALTER TABLE "hf"."product_categories"
-ADD FOREIGN KEY ("parent_id") REFERENCES "hf"."product_categories" ("id") ON DELETE RESTRICT;
+ALTER TABLE "hf"."product_categories" ADD FOREIGN KEY ("parent_id") REFERENCES "hf"."product_categories" ("id") ON DELETE RESTRICT;
 
-ALTER TABLE "hf"."orders"
-ADD FOREIGN KEY ("user_id") REFERENCES "hf"."users" ("id") ON DELETE CASCADE;
+ALTER TABLE "hf"."orders" ADD FOREIGN KEY ("user_id") REFERENCES "hf"."users" ("id") ON DELETE CASCADE;
 
-ALTER TABLE "hf"."orders"
-ADD FOREIGN KEY ("merchant_id") REFERENCES "hf"."merchants" ("id") ON DELETE CASCADE;
+ALTER TABLE "hf"."orders" ADD FOREIGN KEY ("merchant_id") REFERENCES "hf"."merchants" ("id") ON DELETE CASCADE;
 
-ALTER TABLE "hf"."orders"
-ADD FOREIGN KEY ("shipping_address_id") REFERENCES "hf"."shipping_addresses" ("id") ON DELETE RESTRICT;
+ALTER TABLE "hf"."orders" ADD FOREIGN KEY ("shipping_address_id") REFERENCES "hf"."shipping_addresses" ("id") ON DELETE RESTRICT;
 
-ALTER TABLE "hf"."order_items"
-ADD FOREIGN KEY ("order_id") REFERENCES "hf"."orders" ("id") ON DELETE CASCADE;
+ALTER TABLE "hf"."order_items" ADD FOREIGN KEY ("order_id") REFERENCES "hf"."orders" ("id") ON DELETE CASCADE;
 
-ALTER TABLE "hf"."order_items"
-ADD FOREIGN KEY ("product_id") REFERENCES "hf"."products" ("id") ON DELETE CASCADE;
+ALTER TABLE "hf"."order_items" ADD FOREIGN KEY ("product_id") REFERENCES "hf"."products" ("id") ON DELETE CASCADE;
