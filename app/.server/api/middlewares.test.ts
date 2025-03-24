@@ -5,6 +5,7 @@ import {
   requireAnonymousUser,
   requireAuthenticatedUser,
   requireFormBody,
+  requireHttpMethod,
   requireJsonBody,
   requirePathParams,
   requireSearchParams,
@@ -126,6 +127,38 @@ describe('composeMiddlewares()', () => {
     expect(mockedMiddleware1).toBeCalledTimes(1);
     expect(mockedMiddleware2).not.toBeCalled();
     expect(mockedMiddleware3).not.toBeCalled();
+  });
+});
+
+describe('requireHttpMethod()', () => {
+  it('should expect methods as list', async () => {
+    await expect(
+      // @ts-expect-error Testing invalid argument
+      requireHttpMethod({ requiredMethods: 'GET' })({
+        request: new Request('https://example.com', { method: 'GET' }),
+      }),
+    ).rejects.toThrow(ServerBaseError);
+  });
+
+  it('should support multiple methods', async () => {
+    await expect(
+      requireHttpMethod({ requiredMethods: ['GET', 'POST'] })({
+        request: new Request('https://example.com', { method: 'GET' }),
+      }),
+    ).resolves.not.toThrow();
+    await expect(
+      requireHttpMethod({ requiredMethods: ['GET', 'POST'] })({
+        request: new Request('https://example.com', { method: 'POST' }),
+      }),
+    ).resolves.not.toThrow();
+  });
+
+  it('should throw error if request method does not appear in the list', async () => {
+    await expect(
+      requireHttpMethod({ requiredMethods: ['POST', 'DELETE'] })({
+        request: new Request('https://example.com', { method: 'GET' }),
+      }),
+    ).rejects.toThrow(ServerBaseError);
   });
 });
 

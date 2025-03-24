@@ -165,4 +165,5 @@ export const apiErrorCodes = {
   USERNAME_ALREADY_EXISTS: 'username_already_exists',
   EMAIL_ALREADY_EXISTS: 'email_already_exists',
   TOO_MANY_REQUESTS: 'too_many_requests',
+  INVALID_REQUEST_METHOD: 'invalid_request_method',
 } as const;

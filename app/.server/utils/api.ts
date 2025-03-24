@@ -152,4 +152,5 @@ export const apiErrorResponseStatus: Record<ValueOf<typeof apiErrorCodes>, numbe
   [apiErrorCodes.USERNAME_ALREADY_EXISTS]: 400,
   [apiErrorCodes.EMAIL_ALREADY_EXISTS]: 400,
   [apiErrorCodes.TOO_MANY_REQUESTS]: 429,
+  [apiErrorCodes.INVALID_REQUEST_METHOD]: 405,
 });

@@ -13,7 +13,14 @@ import type { JWTVerifyResult } from 'jose';
 import type { MaybePromise } from '~/utils/types';
 import { getRequestCache } from '~/.server/utils/request-cache';
 import { parseFormData, type FileUploadHandler } from '@mjackson/form-data-parser';
-import { AuthError, getPublicErrorResponseData, handleError, ServerBaseError } from '~/.server/utils/error';
+import {
+  AuthError,
+  getPublicErrorResponseData,
+  handleError,
+  LogicError,
+  ServerBaseError,
+  ValidationError,
+} from '~/.server/utils/error';
 import type { Session } from '~/.server/modules/auth/types';
 
 const getRequestCacheForMiddleware = (...args: Parameters<typeof getRequestCache>) =>
@@ -86,6 +93,31 @@ export const composeMiddlewares =
       }
     } catch (err) {
       return handleError(err, args.request);
+    }
+  };
+
+type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH' | 'OPTIONS' | 'HEAD';
+export const requireHttpMethod =
+  ({ requiredMethods }: { requiredMethods: HttpMethod[] }) =>
+  async ({ request }: Pick<ActionFunctionArgs, 'request'>) => {
+    const method = request.method as HttpMethod;
+
+    const apiErrorCode = apiErrorCodes.INVALID_REQUEST_METHOD;
+    const err = new ValidationError({
+      code: apiErrorCode,
+      publicMessage: `Invalid request method (${method})`,
+    });
+
+    if (!Array.isArray(requiredMethods)) {
+      throw new LogicError({
+        code: apiErrorCodes.UNKNOWN_ERROR,
+        publicMessage: `Unknown error checking request method`,
+        privateMessage: '`requiredMethods` must be array',
+      });
+    }
+
+    if (!requiredMethods.includes(method)) {
+      throw err;
     }
   };
 
