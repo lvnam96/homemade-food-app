@@ -229,7 +229,7 @@ describe('requireAnonymousUser()', () => {
 });
 
 describe('requireValidSessionInToken()', () => {
-  it('should do nothing if session is valid', async () => {
+  it('should return Session object if session is valid', async () => {
     const existingSession: Awaited<ReturnType<typeof getAuthSessionById>> = {
       id: BigInt('2'),
       userId: BigInt('21'),
@@ -247,7 +247,21 @@ describe('requireValidSessionInToken()', () => {
           }),
         }),
       }),
-    ).resolves.not.toThrow();
+    ).resolves.toMatchObject(existingSession);
+  });
+
+  it('should throw Response object if session is invalid', async () => {
+    if (vi.isMockFunction(getAuthSessionById)) getAuthSessionById.mockImplementation(async () => null);
+
+    await expect(
+      requireValidSessionInToken({
+        request: new Request('https://example.com', {
+          headers: new Headers({
+            Authorization: 'Bearer ' + validAccessToken,
+          }),
+        }),
+      }),
+    ).rejects.toThrow(Response);
   });
 });
 

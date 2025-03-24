@@ -8,12 +8,13 @@ import {
   getGeneralServerErrorResponse,
   getUnauthorizedResponse,
 } from '~/.server/utils/api';
-import { checkIsValidSessionInTokenPayload, verifyTokenClaims } from '~/.server/modules/auth';
+import { checkIsValidSessionInTokenPayload, getAuthSessionById, verifyTokenClaims } from '~/.server/modules/auth';
 import type { JWTVerifyResult } from 'jose';
 import type { MaybePromise } from '~/utils/types';
 import { getRequestCache } from '~/.server/utils/request-cache';
 import { parseFormData, type FileUploadHandler } from '@mjackson/form-data-parser';
 import { AuthError, getPublicErrorResponseData, handleError, ServerBaseError } from '~/.server/utils/error';
+import type { Session } from '~/.server/modules/auth/types';
 
 const getRequestCacheForMiddleware = (...args: Parameters<typeof getRequestCache>) =>
   getRequestCache<{
@@ -21,6 +22,7 @@ const getRequestCacheForMiddleware = (...args: Parameters<typeof getRequestCache
     json: JSONValue;
     searchParams: URLSearchParams;
     formData: FormData;
+    session: Session;
   }>(...args);
 
 const getRequestBearerTokenData = async <
@@ -141,10 +143,15 @@ export const requireValidSessionInToken = async ({ request }: Pick<ActionFunctio
     const { tokenPayload } = await getRequestData<AccessTokenPayload | RefreshTokenPayload>({ request });
     cache.set('tokenPayload', tokenPayload);
   }
-  const tokenPayload = cache.get('tokenPayload')!;
+  const tokenPayload = cache.get('tokenPayload');
+  if (!tokenPayload?.payload?.sessionId) throw getUnauthorizedResponse({ code: apiErrorCodes.INVALID_AUTH_TOKEN });
 
-  if (!(await checkIsValidSessionInTokenPayload({ tokenPayload })))
+  const session = await getAuthSessionById(tokenPayload.payload.sessionId);
+  if (!session || session?.userId?.toString() !== tokenPayload?.payload?.user.id)
     throw getUnauthorizedResponse({ code: apiErrorCodes.INVALID_AUTH_TOKEN });
+
+  cache.set('session', session);
+  return session;
 };
 
 export const requireValidTokenType =
