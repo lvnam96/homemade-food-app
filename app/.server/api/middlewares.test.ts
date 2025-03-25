@@ -12,7 +12,12 @@ import {
   requireValidSessionInToken,
   requireValidTokenType,
 } from './middlewares';
-import { generateAccessToken, generateRefreshToken, getAuthSessionById } from '~/.server/modules/auth';
+import {
+  createNewPairOfTokens,
+  createPayloadForNewTokens,
+  getAuthSessionById,
+  getSessionExpirationDate,
+} from '~/.server/modules/auth';
 import { getRequestCache } from '~/.server/utils/request-cache';
 import { ServerBaseError } from '~/.server/utils/error';
 
@@ -52,14 +57,14 @@ afterAll(() => {
   vi.restoreAllMocks();
 });
 
-const validAccessToken = await generateAccessToken({
-  sessionId: '39',
-  user: { id: '21', email: 'example@gmail.com' },
-});
-const validRefreshToken = await generateRefreshToken({
-  sessionId: '39',
-  user: { id: '21', email: 'example@gmail.com' },
-});
+const { accessToken: validAccessToken, refreshToken: validRefreshToken } = await createNewPairOfTokens(
+  createPayloadForNewTokens({
+    sessionId: BigInt('39'),
+    userId: BigInt('21'),
+    email: 'example@gmail.com',
+  }),
+  getSessionExpirationDate().getTime() / 1000,
+);
 
 describe('composeMiddlewares()', () => {
   it('should compose multiple middlewares correctly', async () => {

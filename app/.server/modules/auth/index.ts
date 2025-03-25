@@ -14,13 +14,10 @@ import { apiErrorCodes } from '~/services/api';
 export * from './models/user';
 export * from './models/session';
 
-const ONE_MONTH_IN_MILISECONDS = 60 * 60 * 24 * 30;
-export const getSessionExpirationDate = () => new Date(Date.now() + ONE_MONTH_IN_MILISECONDS * 1000);
+const ONE_MONTH_IN_SECONDS = 60 * 60 * 24 * 30;
+export const getSessionExpirationDate = () => new Date(Date.now() + ONE_MONTH_IN_SECONDS * 1000);
 
-export const generateAccessToken = (
-  payload: AccessTokenPayload['payload'],
-  expirationTime?: string | number | Date,
-) => {
+const generateAccessToken = (payload: AccessTokenPayload['payload'], expirationTime?: string | number | Date) => {
   invariant(import.meta.env.PUBLIC_ORIGIN, 'Missing env variable `PUBLIC_ORIGIN`');
   return signJwt(
     {
@@ -32,10 +29,7 @@ export const generateAccessToken = (
   );
 };
 
-export const generateRefreshToken = (
-  payload: RefreshTokenPayload['payload'],
-  expirationTime?: string | number | Date,
-) => {
+const generateRefreshToken = (payload: RefreshTokenPayload['payload'], expirationTime?: string | number | Date) => {
   invariant(import.meta.env.PUBLIC_ORIGIN, 'Missing env variable `PUBLIC_ORIGIN`');
   return signJwt(
     {
@@ -107,12 +101,31 @@ export const createPayloadForNewTokens = ({
   },
 });
 
-export const createNewPairOfTokens = async (payload: ReturnType<typeof createPayloadForNewTokens>) => {
+/**
+ *
+ * @param expirationTime Must provide same expiration time (in SECONDS) as new session in DB otherwise this will create tokens where expiration time of tokens does not match expiration time of session in DB
+ */
+export const createNewPairOfTokens = async (
+  payload: ReturnType<typeof createPayloadForNewTokens>,
+  expirationTime: number,
+) => {
   const jsonizablePayload = makeObjectPropsJsonCompatible(payload);
+  validateSessionExpirationTime(expirationTime);
   return {
     accessToken: await generateAccessToken(jsonizablePayload),
-    refreshToken: await generateRefreshToken(jsonizablePayload),
+    refreshToken: await generateRefreshToken(jsonizablePayload, expirationTime),
   };
+};
+
+const validateSessionExpirationTime = (expirationTime: number) => {
+  // expirationTime must is in seconds, positive, not in the past
+  if (typeof expirationTime !== 'number' || expirationTime <= 0 || Date.now() / 1000 > expirationTime) {
+    throw new LogicError({
+      code: apiErrorCodes.UNKNOWN_ERROR,
+      publicMessage: 'Something went wrong',
+      privateMessage: 'Invalid expiration time when creating tokens',
+    });
+  }
 };
 
 export const signUserIn = async ({ email, password }: { email: UserCredentials['email']; password: string }) => {
@@ -132,9 +145,10 @@ export const signUserIn = async ({ email, password }: { email: UserCredentials['
       publicMessage: 'Invalid credentials',
     });
 
+  const sessionExpirationDate = getSessionExpirationDate();
   const session = await createAuthSession({
     userId: user.id.toString(),
-    expiredAt: getSessionExpirationDate(),
+    expiredAt: sessionExpirationDate,
   });
   const { accessToken, refreshToken } = await createNewPairOfTokens(
     createPayloadForNewTokens({
@@ -142,6 +156,7 @@ export const signUserIn = async ({ email, password }: { email: UserCredentials['
       userId: user.id,
       email,
     }),
+    sessionExpirationDate.getTime() / 1000,
   );
   return {
     user: user,
