@@ -501,6 +501,7 @@ describe('requireJsonBody()', () => {
           method: 'POST',
           headers: new Headers({
             'Content-Type': 'application/json',
+            'Content-Length': '1',
           }),
           body: JSON.stringify({}),
         }),
@@ -515,6 +516,7 @@ describe('requireJsonBody()', () => {
           method: 'POST',
           headers: new Headers({
             'Content-Type': 'application/json',
+            'Content-Length': '1',
           }),
           body: '',
         }),
@@ -529,6 +531,7 @@ describe('requireJsonBody()', () => {
           method: 'GET',
           headers: new Headers({
             'Content-Type': 'application/json',
+            'Content-Length': '1',
           }),
         }),
       }),
@@ -541,6 +544,7 @@ describe('requireJsonBody()', () => {
         request: new Request('https://example.com', {
           headers: new Headers({
             'Content-Type': 'text/plain',
+            'Content-Length': '1',
           }),
         }),
       }),
@@ -550,11 +554,59 @@ describe('requireJsonBody()', () => {
         request: new Request('https://example.com', { headers: new Headers({}) }),
       }),
     ).rejects.toThrow(Response);
+  });
+
+  it('should throw ServerBaseError object if Content-Length header is missing', async () => {
     await expect(
       requireJsonBody()({
-        request: new Request('https://example.com'),
+        request: new Request('https://example.com', {
+          method: 'POST',
+          headers: new Headers({
+            'Content-Type': 'application/json',
+          }),
+          body: '{}',
+        }),
       }),
-    ).rejects.toThrow(Response);
+    ).rejects.toThrow(ServerBaseError);
+    await expect(
+      requireJsonBody()({
+        request: new Request('https://example.com', {
+          method: 'POST',
+          headers: new Headers({
+            'Content-Type': 'application/json',
+            'Content-Length': '',
+          }),
+          body: '{}',
+        }),
+      }),
+    ).rejects.toThrow(ServerBaseError);
+  });
+
+  it('should throw ServerBaseError object if Content-Length header is invalid', async () => {
+    await expect(
+      requireJsonBody()({
+        request: new Request('https://example.com', {
+          method: 'POST',
+          headers: new Headers({
+            'Content-Type': 'application/json',
+            'Content-Length': 'invalid',
+          }),
+          body: '{}',
+        }),
+      }),
+    ).rejects.toThrow(ServerBaseError);
+    await expect(
+      requireJsonBody()({
+        request: new Request('https://example.com', {
+          method: 'POST',
+          headers: new Headers({
+            'Content-Type': 'application/json',
+            'Content-Length': '102401',
+          }),
+          body: '{}',
+        }),
+      }),
+    ).rejects.toThrow(ServerBaseError);
   });
 });
 

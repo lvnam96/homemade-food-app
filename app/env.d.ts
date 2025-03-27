@@ -47,6 +47,7 @@ namespace NodeJS {
   interface ProcessEnv {
     readonly JWT_SECRET: string;
     readonly SESSION_COOKIE_SECRET: string;
+    readonly MAX_JSON_SIZE_IN_BYTES: string;
     readonly DB_MIGRATING: string | undefined;
   }
 }

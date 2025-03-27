@@ -22,6 +22,11 @@ import {
   ValidationError,
 } from '~/.server/utils/error';
 import type { Session } from '~/.server/modules/auth/types';
+import '~/.server/utils/import-env';
+import { invariant } from '../utils/invariant';
+
+invariant(process.env.MAX_JSON_SIZE_IN_BYTES, 'MAX_JSON_SIZE_IN_BYTES is not set');
+const MAX_JSON_SIZE_IN_BYTES = Number.parseInt(process.env.MAX_JSON_SIZE_IN_BYTES, 10);
 
 const getRequestCacheForMiddleware = (...args: Parameters<typeof getRequestCache>) =>
   getRequestCache<{
@@ -270,6 +275,15 @@ export const requireJsonBody =
       throw getBadRequestResponse({
         code: apiErrorCodes.INVALID_REQUEST_BODY,
         message: 'Invalid `Content-Type` header',
+      });
+    }
+
+    const contentLength = Number.parseInt(request.headers.get('content-length') as string, 10);
+    if (!contentLength || contentLength > MAX_JSON_SIZE_IN_BYTES) {
+      throw new ValidationError({
+        code: apiErrorCodes.INVALID_REQUEST_BODY,
+        publicMessage: 'Request body too large',
+        privateMessage: `Request body size is ${contentLength} bytes`,
       });
     }
 
