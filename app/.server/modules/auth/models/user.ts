@@ -12,7 +12,7 @@ import {
 } from '~/.server/db';
 // import { bigint, date, object, orNull, string } from '@adllang/jsonbinding';
 import { comparePassword, getSaltedPassword, hashPassword } from '~/.server/utils/password';
-import { DatabaseError } from '~/.server/utils/error';
+import { DatabaseError, LogicError } from '~/.server/utils/error';
 import { apiErrorCodes } from '~/.server/utils/api';
 
 // export const userJsonBinding = object<UserData>({
@@ -47,17 +47,35 @@ export const getUserById = async (
       .where(eq(usersInHf.id, BigInt(id)))
   )[0];
 
-// export const getUserByEmail = async (email: UserCredentials['email']) =>
-//   // `SELECT * FROM ${usersInHf} INNER JOIN ${userCredentialsInHf} ON ${usersInHf.id} = ${userCredentialsInHf.userId} WHERE ${userCredentialsInHf.email} = ${email}`
-//   db
-//     .select()
-//     .from(usersInHf)
-//     .innerJoin(userCredentialsInHf, eq(usersInHf.id, userCredentialsInHf.userId))
-//     .where(eq(userCredentialsInHf.email, email));
+export const getUserByEmail = async (
+  email: UserCredentials['email'],
+  {
+    dbInstance = db,
+  }: {
+    dbInstance?: DrizzleDBInstance | DrizzleDBInstanceInTransaction;
+  } = {
+    dbInstance: db,
+  },
+) =>
+  // `SELECT * FROM ${usersInHf} INNER JOIN ${userCredentialsInHf} ON ${usersInHf.id} = ${userCredentialsInHf.userId} WHERE ${userCredentialsInHf.email} = ${email}`
+  dbInstance
+    .select()
+    .from(usersInHf)
+    .innerJoin(userCredentialsInHf, eq(usersInHf.id, userCredentialsInHf.userId))
+    .where(eq(userCredentialsInHf.email, email));
 
-// export const getUserCredentialsByEmail = async (email: UserCredentials['email']) =>
-//   // `SELECT * FROM ${userCredentialsInHf} WHERE ${userCredentialsInHf.email} = ${email}`
-//   db.select().from(userCredentialsInHf).where(eq(userCredentialsInHf.email, email));
+export const getUserCredentialsByEmail = async (
+  email: UserCredentials['email'],
+  {
+    dbInstance = db,
+  }: {
+    dbInstance?: DrizzleDBInstance | DrizzleDBInstanceInTransaction;
+  } = {
+    dbInstance: db,
+  },
+) =>
+  // `SELECT * FROM ${userCredentialsInHf} WHERE ${userCredentialsInHf.email} = ${email}`
+  dbInstance.select().from(userCredentialsInHf).where(eq(userCredentialsInHf.email, email));
 
 export const deleteUserByEmail = async (
   email: UserCredentials['email'],
@@ -209,6 +227,16 @@ export const resetUserPassword = async (
     dbInstance: db,
   },
 ) => {
+  // validate user exists before updating password
+  const user = await getUserByEmail(email, { dbInstance });
+  if (!user) {
+    throw new LogicError({
+      code: apiErrorCodes.INVALID_EMAIL,
+      publicMessage: 'User not found',
+      privateMessage: `User with email ${email} is not found to reset password`,
+    });
+  }
+
   const { passwd, salt } = await getSaltedPassword(password);
   const hashedPassword = await hashPassword(passwd);
   return dbInstance
