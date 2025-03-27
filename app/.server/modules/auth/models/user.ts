@@ -148,8 +148,7 @@ export const createUser = async (
       .returning();
 
     if (!userCredentialsRes) {
-      // FIXME: check if we must clean up the user record we just created
-      // await tx.delete(usersInHf).where(eq(usersInHf.id, userRes.id));
+      // await tx.delete(usersInHf).where(eq(usersInHf.id, userRes.id)); // we dont need to clean up the newly created user record manually as it will be done when the transaction is rolled back
       throw new DatabaseError({
         publicMessage: `Email ${user.email} is already registered`,
         code: apiErrorCodes.EMAIL_ALREADY_EXISTS,
