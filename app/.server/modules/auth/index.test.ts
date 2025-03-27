@@ -14,7 +14,7 @@ vi.mock(
   './models/session.ts', // NOTE: must mock the actual module, not the re-exported one
   async (actual) => {
     return {
-      __esmodule: true,
+      __esModule: true,
       ...((await actual()) as any),
       getAuthSessionById: vi.fn(),
     };

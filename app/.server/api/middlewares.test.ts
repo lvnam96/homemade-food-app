@@ -25,7 +25,7 @@ vi.mock(
   '../modules/auth/models/session.ts', // NOTE: must mock the actual module, not the re-exported one
   async (actual) => {
     return {
-      __esmodule: true,
+      __esModule: true,
       ...((await actual()) as any),
       getAuthSessionById: vi.fn(),
     };
@@ -36,7 +36,7 @@ vi.mock(
 // 1. First, partially mock the module that exports `getRequestCache`
 vi.mock(import('../utils/request-cache'), async (actual) => {
   return {
-    __esmodule: true,
+    __esModule: true,
     ...((await actual()) as any), // rest of exports will get actual implementation
     getRequestCache: vi.fn(),
   };
