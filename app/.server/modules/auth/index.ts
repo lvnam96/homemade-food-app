@@ -173,9 +173,16 @@ export const signUserOut = async (refreshToken: string) => {
   const sessionId = tokenPayload.payload.payload.sessionId;
   const userId = tokenPayload.payload.payload.user.id;
 
-  if (sessionId) {
-    void (await deleteAuthSessionById(sessionId));
-  } else console.error('No auth session ID found. User ID:', userId);
+  if (!sessionId) {
+    throw new AuthError({
+      code: apiErrorCodes.INVALID_AUTH_TOKEN,
+      publicMessage: 'Invalid token',
+      privateMessage: `Missing sessionId in refresh token for user ${userId}`,
+    });
+  }
+
+  await deleteAuthSessionById(sessionId);
+  return { success: true };
 };
 
 export const signUserUp = async (
