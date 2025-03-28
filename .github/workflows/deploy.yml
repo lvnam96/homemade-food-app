@@ -71,6 +71,7 @@ jobs:
     env:
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
       JWT_SECRET: ${{ secrets.JWT_SECRET }}
+      MAX_JSON_SIZE_IN_BYTES: ${{ secrets.MAX_JSON_SIZE_IN_BYTES }}
       PUBLIC_ORIGIN: ${{ vars.PUBLIC_ORIGIN }}
     steps:
       - name: ⬇️ Checkout repo
