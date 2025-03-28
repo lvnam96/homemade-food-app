@@ -4,9 +4,12 @@
 // - For Pool connection (uses websocket): https://neon.tech/guides/drizzle-local-vercel
 // - For serverless (uses fetch): https://neon.tech/guides/local-development-with-neon
 
+// Drizzle with Neon:
+// - https://orm.drizzle.team/docs/connect-neon
+// - https://neon.tech/docs/serverless/serverless-driver#use-the-driver-over-websockets
+
 import { neonConfig, Pool } from '@neondatabase/serverless';
 import { drizzle as neonServerlessDrizzle } from 'drizzle-orm/neon-serverless'; // use `'drizzle-orm/neon-http'` for normal HTTP connection on serverless platforms
-import { drizzle as neonHttpDrizzle } from 'drizzle-orm/neon-http'; // use `'drizzle-orm/neon-http'` for normal HTTP connection on serverless platforms
 import invariant from 'tiny-invariant';
 import ws from 'ws';
 
@@ -40,13 +43,12 @@ if (process.env.NODE_ENV === 'production') {
   neonConfig.forceDisablePgSSL = true;
 }
 
-export const db = neonHttpDrizzle({
+export const db = neonServerlessDrizzle({
   connection: {
     connectionString,
-    // TODO: check if this works (`neonDrizzle` has not supported this yet according to its typing):
-    // max: process.env.DB_MIGRATING || process.env.DB_SEEDING ? 1 : undefined,
   },
   casing: 'snake_case',
+  ws,
 });
 
 export const createPooledDBConnection = () => {
@@ -54,9 +56,11 @@ export const createPooledDBConnection = () => {
     connectionString,
     max: process.env.DB_MIGRATING || process.env.DB_SEEDING ? 1 : undefined,
   });
-  const db = neonServerlessDrizzle(pool, {
+  const db = neonServerlessDrizzle({
+    client: pool,
     ...neonConfig,
     casing: 'snake_case',
+    ws,
   });
   return { pool, db };
 };
