@@ -10,11 +10,12 @@ import {
   type DrizzleDBInstanceInTransaction,
   type DrizzleDBPooledInstance,
 } from '~/.server/db';
-// import { bigint, date, object, orNull, string } from '@adllang/jsonbinding';
 import { comparePassword, getSaltedPassword, hashPassword } from '~/.server/utils/password';
 import { DatabaseError, LogicError } from '~/.server/utils/error';
 import { apiErrorCodes } from '~/.server/utils/api';
+import { decode, encode } from 'punycode/';
 
+// import { bigint, date, object, orNull, string } from '@adllang/jsonbinding';
 // export const userJsonBinding = object<UserData>({
 //   id: bigint(),
 //   displayedName: string(),
@@ -25,7 +26,9 @@ import { apiErrorCodes } from '~/.server/utils/api';
 //   deletedAt: orNull(date()),
 // });
 
-export const normalizeEmail = (s: string) => s.toLowerCase();
+export const normalizeEmail = (s: string) => encode(s.toLowerCase());
+
+export const denormalizeEmail = (encodedEmail: string) => decode(encodedEmail);
 
 export const normalizeUsername = (s: string) => s.replace(/[^a-zA-Z0-9_]/g, '_').toLowerCase();
 
