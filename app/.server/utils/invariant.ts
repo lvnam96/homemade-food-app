@@ -26,9 +26,9 @@ export function invariant(
     assertGuard<Error>(err); // _invariant(err instanceof Error, 'This should never be thrown');
     handleError(err);
     throw new errorClass({
-      code: apiErrorCodes.UNKNOWN_ERROR,
       privateMessage: err.message,
       ...args,
+      code: args.code ?? apiErrorCodes.UNKNOWN_ERROR,
       publicMessage: args.publicMessage ?? 'Unknown server error',
     });
   }
@@ -60,9 +60,9 @@ export function invariantWithResponse(
     throw getErrorResponse(
       getPublicErrorResponseData(
         new errorClass({
-          code: apiErrorCodes.UNKNOWN_ERROR,
           privateMessage: err.message,
           ...args,
+          code: args.code ?? apiErrorCodes.UNKNOWN_ERROR,
           publicMessage: args.publicMessage ?? 'Unknown server error',
         }),
       ),

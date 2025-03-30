@@ -1,10 +1,5 @@
 import { type ActionFunctionArgs } from '@remix-run/node';
-import {
-  apiErrorCodes,
-  getBadRequestResponse,
-  getBearerTokenFromAuthHeader,
-  wrapResponseBody,
-} from '~/.server/utils/api';
+import { getBearerTokenFromAuthHeader, wrapResponseBody } from '~/.server/utils/api';
 import { createPooledDBConnection } from '~/.server/db';
 import { makeObjectPropsJsonCompatible } from '~/utils/data';
 import {
@@ -15,6 +10,7 @@ import {
   requireValidTokenType,
 } from '../middlewares';
 import { signUserIn, signUserOut, signUserUp } from '~/.server/modules/auth';
+import { invariant } from '~/.server/utils/invariant';
 
 // export const loader = async ({ request }: LoaderFunctionArgs) => {};
 
@@ -59,12 +55,7 @@ export const action = async (actionArgs: ActionFunctionArgs) => {
       })(actionArgs);
 
       const refreshToken = getBearerTokenFromAuthHeader(request.headers.get('Authorization'));
-      if (!refreshToken)
-        throw getBadRequestResponse({
-          code: apiErrorCodes.INVALID_AUTH_TOKEN,
-          message: 'Refresh token is required',
-        });
-
+      invariant(refreshToken, 'This should not happen since previous middlewares should have validated the token.');
       await signUserOut(refreshToken); // If this fails, we still need to delete the session/tokens from the client and it doesn't do any harm staying in the db anyway.
     } catch (err) {
       defaultApiRouteErrorHandler(err, request);

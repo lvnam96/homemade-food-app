@@ -20,6 +20,7 @@ import {
 } from '~/.server/modules/auth';
 import { getRequestCache } from '~/.server/utils/request-cache';
 import { ServerBaseError } from '~/.server/utils/error';
+import { consoleError } from 'tests/setup/setup-test-env';
 
 vi.mock(
   '../modules/auth/models/session.ts', // NOTE: must mock the actual module, not the re-exported one
@@ -97,6 +98,9 @@ describe('composeMiddlewares()', () => {
   });
 
   it('should catch Error thrown from any middleware in the chain & stop calling later middlewares', async () => {
+    // Expect error to be logged to stderr when middleware throws:
+    consoleError.mockImplementation(() => {});
+
     const mockedMiddleware1 = vi.fn();
     const mockedMiddleware2 = vi.fn().mockRejectedValueOnce(new Error());
     const mockedMiddleware3 = vi.fn();
@@ -209,7 +213,7 @@ describe('requireAuthenticatedUser()', () => {
     ).resolves.not.toThrow();
   });
 
-  it('should throw Response object if user is not authenticated', async () => {
+  it('should throw ServerBaseError object if user is not authenticated', async () => {
     // Expect error to be thrown when verifying token fails:
     await expect(
       requireAuthenticatedUser({
@@ -232,7 +236,7 @@ describe('requireAnonymousUser()', () => {
     ).resolves.not.toThrow();
   });
 
-  it('should throw Response object if user request is sent with any bearer token, not matter valid or invalid', async () => {
+  it('should throw ServerBaseError object if user request is sent with any bearer token, not matter valid or invalid', async () => {
     if (vi.isMockFunction(getAuthSessionById)) getAuthSessionById.mockImplementation(async () => undefined);
 
     // Expect error to be thrown when verifying token fails:
@@ -262,7 +266,7 @@ describe('requireAnonymousUser()', () => {
           }),
         }),
       }),
-    ).rejects.toThrow(Response);
+    ).rejects.toThrow(ServerBaseError);
   });
 });
 
@@ -288,7 +292,7 @@ describe('requireValidSessionInToken()', () => {
     ).resolves.toMatchObject(existingSession);
   });
 
-  it('should throw Response object if session is invalid', async () => {
+  it('should throw ServerBaseError object if session is invalid', async () => {
     if (vi.isMockFunction(getAuthSessionById)) getAuthSessionById.mockImplementation(async () => null);
 
     await expect(
@@ -299,7 +303,7 @@ describe('requireValidSessionInToken()', () => {
           }),
         }),
       }),
-    ).rejects.toThrow(Response);
+    ).rejects.toThrow(ServerBaseError);
   });
 });
 
@@ -329,7 +333,7 @@ describe('requireValidTokenType()', () => {
     ).resolves.toBeUndefined();
   });
 
-  it('should throw Response object if token type is invalid', async () => {
+  it('should throw ServerBaseError object if token type is invalid', async () => {
     await expect(
       requireValidTokenType({
         expectedTokenType: 'access_token',
@@ -338,7 +342,7 @@ describe('requireValidTokenType()', () => {
           headers: new Headers({ Authorization: 'Bearer ' + validRefreshToken }),
         }),
       }),
-    ).rejects.toThrow(Response);
+    ).rejects.toThrow(ServerBaseError);
 
     await expect(
       requireValidTokenType({
@@ -348,10 +352,10 @@ describe('requireValidTokenType()', () => {
           headers: new Headers({ Authorization: 'Bearer ' + validAccessToken }),
         }),
       }),
-    ).rejects.toThrow(Response);
+    ).rejects.toThrow(ServerBaseError);
   });
 
-  it('should throw Response object if passed token types are not valid', async () => {
+  it('should throw ServerBaseError object if passed token types are not valid', async () => {
     vi.mocked(getRequestCache).mockImplementation(() => ({
       get: cacheGetFn,
       has: cacheHasFn.mockImplementation(() => true),
@@ -371,7 +375,7 @@ describe('requireValidTokenType()', () => {
       })({
         request: emptyRequest,
       }),
-    ).rejects.toThrow(Response);
+    ).rejects.toThrow(ServerBaseError);
 
     cacheGetFn.mockReturnValue({
       type: undefined,
@@ -382,7 +386,7 @@ describe('requireValidTokenType()', () => {
       })({
         request: emptyRequest,
       }),
-    ).rejects.toThrow(Response);
+    ).rejects.toThrow(ServerBaseError);
 
     // Test both invalid `tokenType` and `expectedTokenType` but matching each other:
     cacheGetFn.mockReturnValue({
@@ -395,7 +399,7 @@ describe('requireValidTokenType()', () => {
       })({
         request: emptyRequest,
       }),
-    ).rejects.toThrow(Response);
+    ).rejects.toThrow(ServerBaseError);
 
     cacheGetFn.mockReturnValue({
       type: undefined,
@@ -407,7 +411,7 @@ describe('requireValidTokenType()', () => {
       })({
         request: emptyRequest,
       }),
-    ).rejects.toThrow(Response);
+    ).rejects.toThrow(ServerBaseError);
 
     cacheGetFn.mockReturnValue({
       type: 'invalid_type',
@@ -419,10 +423,10 @@ describe('requireValidTokenType()', () => {
       })({
         request: emptyRequest,
       }),
-    ).rejects.toThrow(Response);
+    ).rejects.toThrow(ServerBaseError);
   });
 
-  it('should throw Response object if expected token type is invalid', async () => {
+  it('should throw ServerBaseError object if expected token type is invalid', async () => {
     const validAuthedRequest = new Request('https://example.com', {
       headers: new Headers({ Authorization: 'Bearer ' + validAccessToken }),
     });
@@ -434,7 +438,7 @@ describe('requireValidTokenType()', () => {
       })({
         request: validAuthedRequest,
       }),
-    ).rejects.toThrow(Response);
+    ).rejects.toThrow(ServerBaseError);
     await expect(
       requireValidTokenType({
         // @ts-expect-error Testing invalid argument
@@ -442,7 +446,7 @@ describe('requireValidTokenType()', () => {
       })({
         request: validAuthedRequest,
       }),
-    ).rejects.toThrow(Response);
+    ).rejects.toThrow(ServerBaseError);
     await expect(
       requireValidTokenType({
         // @ts-expect-error Testing invalid argument
@@ -450,7 +454,7 @@ describe('requireValidTokenType()', () => {
       })({
         request: validAuthedRequest,
       }),
-    ).rejects.toThrow(Response);
+    ).rejects.toThrow(ServerBaseError);
   });
 });
 
@@ -491,6 +495,20 @@ describe('requireFormBody()', () => {
       }),
     ).resolves.not.toThrow();
   });
+
+  it('should throw error if request Content-type header is not `application/x-www-form-urlencoded` or `multipart/form-data`', async () => {
+    await expect(
+      requireFormBody()({
+        request: new Request('https://example.com', {
+          method: 'POST',
+          headers: new Headers({
+            'Content-Type': 'application/json',
+          }),
+          body: new FormData(),
+        }),
+      }),
+    ).rejects.toThrow(ServerBaseError);
+  });
 });
 
 describe('requireJsonBody()', () => {
@@ -503,13 +521,13 @@ describe('requireJsonBody()', () => {
             'Content-Type': 'application/json',
             'Content-Length': '1',
           }),
-          body: JSON.stringify({}),
+          body: '{}',
         }),
       }),
     ).resolves.not.toThrow();
   });
 
-  it('should throw Response object if request body is not JSON even though `Content-Type` header is `application/json`', async () => {
+  it('should throw SyntaxError object if request body is not JSON even though `Content-Type` header is `application/json`', async () => {
     await expect(
       requireJsonBody()({
         request: new Request('https://example.com', {
@@ -524,7 +542,7 @@ describe('requireJsonBody()', () => {
     ).rejects.toThrow(SyntaxError);
   });
 
-  it('should throw Response object if request method is GET even though `Content-Type` header is `application/json`', async () => {
+  it('should throw SyntaxError object if request method is GET even though `Content-Type` header is `application/json`', async () => {
     await expect(
       requireJsonBody()({
         request: new Request('https://example.com', {
@@ -538,7 +556,7 @@ describe('requireJsonBody()', () => {
     ).rejects.toThrow(SyntaxError);
   });
 
-  it('should throw Response object if `Content-Type` header is not `application/json`', async () => {
+  it('should throw ServerBaseError object if `Content-Type` header is not `application/json`', async () => {
     await expect(
       requireJsonBody()({
         request: new Request('https://example.com', {
@@ -548,12 +566,17 @@ describe('requireJsonBody()', () => {
           }),
         }),
       }),
-    ).rejects.toThrow(Response);
+    ).rejects.toThrow(ServerBaseError);
     await expect(
       requireJsonBody()({
         request: new Request('https://example.com', { headers: new Headers({}) }),
       }),
-    ).rejects.toThrow(Response);
+    ).rejects.toThrow(ServerBaseError);
+    await expect(
+      requireJsonBody()({
+        request: new Request('https://example.com'),
+      }),
+    ).rejects.toThrow(ServerBaseError);
   });
 
   it('should throw ServerBaseError object if Content-Length header is missing', async () => {
@@ -619,17 +642,17 @@ describe('requireSearchParams()', () => {
     ).resolves.not.toThrow();
   });
 
-  it('should throw Response object if request search params do not exist', async () => {
+  it('should throw ServerBaseError object if request search params do not exist', async () => {
     await expect(
       requireSearchParams()({
         request: new Request('https://example.com'),
       }),
-    ).rejects.toThrow(Response);
+    ).rejects.toThrow(ServerBaseError);
     await expect(
       requireSearchParams()({
         request: new Request('https://example.com?'),
       }),
-    ).rejects.toThrow(Response);
+    ).rejects.toThrow(ServerBaseError);
   });
 });
 
@@ -644,7 +667,7 @@ describe('requirePathParams()', () => {
     ).resolves.not.toThrow();
   });
 
-  it('should throw Response object if path param validation fails', async () => {
+  it('should throw ServerBaseError object if path param validation fails', async () => {
     const predicate = (params: Record<string, string | undefined>) =>
       typeof params.id === 'string' && params.id ? null : 'Invalid ID';
     await expect(
@@ -653,13 +676,13 @@ describe('requirePathParams()', () => {
       })({
         params: {},
       }),
-    ).rejects.toThrow(Response);
+    ).rejects.toThrow(ServerBaseError);
     await expect(
       requirePathParams({
         predicate,
       })({
         params: { id: '' },
       }),
-    ).rejects.toThrow(Response);
+    ).rejects.toThrow(ServerBaseError);
   });
 });

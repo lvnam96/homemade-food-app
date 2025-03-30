@@ -1,13 +1,6 @@
 import type { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/node';
 import { verifyJwt } from '~/.server/utils/jwt';
-import {
-  apiErrorCodes,
-  getBadRequestResponse,
-  getBearerTokenFromAuthHeader,
-  getForbiddenResponse,
-  getGeneralServerErrorResponse,
-  getUnauthorizedResponse,
-} from '~/.server/utils/api';
+import { apiErrorCodes, getBearerTokenFromAuthHeader, getGeneralServerErrorResponse } from '~/.server/utils/api';
 import { checkIsValidSessionInTokenPayload, getAuthSessionById, verifyTokenClaims } from '~/.server/modules/auth';
 import type { JWTVerifyResult } from 'jose';
 import type { MaybePromise } from '~/utils/types';
@@ -54,7 +47,14 @@ export const defaultApiRouteErrorHandler = (err: unknown, request: Request) => {
   if (err instanceof ServerBaseError) {
     handleError(err, { request });
     throw getGeneralServerErrorResponse(getPublicErrorResponseData(err));
-  } else throw getGeneralServerErrorResponse(); // for other errors that not wrapped as custom error
+  } else if (err instanceof Error) {
+    // Deal with other errors that not wrapped as custom error:
+    handleError(err, { request });
+    throw getGeneralServerErrorResponse(); // NOTE: message of error is sensitive and should not be sent to client
+  } else {
+    console.error('Undetected error:', err);
+    throw getGeneralServerErrorResponse();
+  }
 };
 /**
  * NOTE: Only applicable to middlewares that have same signature as `(args: ActionFunctionArgs | LoaderFunctionArgs) => Promise<any>`
@@ -171,7 +171,10 @@ export const requireAnonymousUser = async ({ request }: Pick<ActionFunctionArgs,
   const { tokenPayload } = await getRequestData({ request });
 
   if (await checkIsValidSessionInTokenPayload({ tokenPayload }))
-    throw getForbiddenResponse({ code: apiErrorCodes.ANONYMOUS_REQUIRED });
+    throw new AuthError({
+      code: apiErrorCodes.ANONYMOUS_REQUIRED,
+      publicMessage: 'Anonymous user required',
+    });
 };
 
 export const requireValidSessionInToken = async ({ request }: Pick<ActionFunctionArgs, 'request'>) => {
@@ -181,11 +184,20 @@ export const requireValidSessionInToken = async ({ request }: Pick<ActionFunctio
     cache.set('tokenPayload', tokenPayload);
   }
   const tokenPayload = cache.get('tokenPayload');
-  if (!tokenPayload?.payload?.sessionId) throw getUnauthorizedResponse({ code: apiErrorCodes.INVALID_AUTH_TOKEN });
+  if (!tokenPayload?.payload?.sessionId)
+    throw new AuthError({
+      code: apiErrorCodes.INVALID_AUTH_TOKEN,
+      publicMessage: 'Invalid token',
+      privateMessage: 'Missing session ID in token payload',
+    });
 
   const session = await getAuthSessionById(tokenPayload.payload.sessionId);
-  if (!session || session?.userId?.toString() !== tokenPayload?.payload?.user.id)
-    throw getUnauthorizedResponse({ code: apiErrorCodes.INVALID_AUTH_TOKEN });
+  if (!session || session.userId.toString() !== tokenPayload?.payload?.user.id)
+    throw new AuthError({
+      code: apiErrorCodes.INVALID_AUTH_TOKEN,
+      publicMessage: 'Invalid token',
+      privateMessage: `Session ID ${tokenPayload.payload.sessionId} is not found or user IDs do not match`,
+    });
 
   cache.set('session', session);
   return session;
@@ -208,9 +220,9 @@ export const requireValidTokenType =
       !validTokenTypes.includes(expectedTokenType) ||
       expectedTokenType !== tokenType
     )
-      throw getUnauthorizedResponse({
+      throw new AuthError({
         code: apiErrorCodes.INVALID_AUTH_TOKEN_TYPE,
-        message: 'Invalid token type',
+        publicMessage: `Invalid token type. Expecting "${expectedTokenType}" but got "${tokenType}"`,
       });
   };
 
@@ -232,9 +244,9 @@ export const requireFormBody =
       contentTypeHeader?.toLowerCase() !== 'application/x-www-form-urlencoded' &&
       !contentTypeHeader?.startsWith('multipart/form-data')
     ) {
-      throw getBadRequestResponse({
+      throw new ValidationError({
         code: apiErrorCodes.INVALID_REQUEST_BODY,
-        message: 'Invalid `Content-Type` header',
+        publicMessage: 'Invalid `Content-Type` header',
       });
     }
 
@@ -253,9 +265,9 @@ export const requireFormBody =
 
     const validationMessage = await predicate(requestBody);
     if (validationMessage) {
-      throw getBadRequestResponse({
+      throw new ValidationError({
         code: apiErrorCodes.INVALID_REQUEST_BODY,
-        message: validationMessage,
+        publicMessage: validationMessage,
       });
     }
   };
@@ -272,9 +284,10 @@ export const requireJsonBody =
   ) =>
   async ({ request }: Pick<ActionFunctionArgs, 'request'>) => {
     if (request.headers.get('content-type')?.toLowerCase() !== 'application/json') {
-      throw getBadRequestResponse({
+      throw new ValidationError({
         code: apiErrorCodes.INVALID_REQUEST_BODY,
-        message: 'Invalid `Content-Type` header',
+        publicMessage: 'Invalid `Content-Type` header',
+        privateMessage: `Expected "application/json" but got "${request.headers.get('content-type')}"`,
       });
     }
 
@@ -296,9 +309,10 @@ export const requireJsonBody =
 
     const validationMessage = await predicate(requestBody);
     if (validationMessage) {
-      throw getBadRequestResponse({
+      throw new ValidationError({
         code: apiErrorCodes.INVALID_REQUEST_BODY,
-        message: validationMessage,
+        publicMessage: validationMessage,
+        privateMessage: `Request body: ${JSON.stringify(requestBody, null, 2)}`,
       });
     }
   };
@@ -322,17 +336,17 @@ export const requireSearchParams =
     const searchParams = cache.get('searchParams')!;
 
     if (!searchParams.size) {
-      throw getBadRequestResponse({
+      throw new ValidationError({
         code: apiErrorCodes.INVALID_REQUEST_QUERY_PARAMS,
-        message: 'Missing required query parameters',
+        publicMessage: 'Missing required query parameters',
       });
     }
 
     const validationMessage = await predicate(searchParams);
     if (validationMessage) {
-      throw getBadRequestResponse({
+      throw new ValidationError({
         code: apiErrorCodes.INVALID_REQUEST_QUERY_PARAMS,
-        message: validationMessage,
+        publicMessage: validationMessage,
       });
     }
   };
@@ -345,15 +359,15 @@ export const requirePathParams =
   }) =>
   async ({ params }: Pick<ActionFunctionArgs, 'params'>) => {
     if (!Object.keys(params).length) {
-      throw getBadRequestResponse({
-        message: 'Missing required path parameters',
+      throw new ValidationError({
+        publicMessage: 'Missing required path parameters',
       });
     }
 
     const validationMessage = await predicate(params);
     if (validationMessage) {
-      throw getBadRequestResponse({
-        message: validationMessage,
+      throw new ValidationError({
+        publicMessage: validationMessage,
       });
     }
   };
