@@ -8,4 +8,5 @@ export default [
 
   // APIs
   route('/api/auth', 'api/auth/index.ts'),
+  route('/api/auth/tokens', 'api/auth/refresh-tokens.ts'),
 ] satisfies RouteConfig;
