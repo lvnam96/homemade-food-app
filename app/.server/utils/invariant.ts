@@ -22,12 +22,12 @@ export function invariant(
 ): asserts condition {
   try {
     _invariant(condition, message);
-  } catch (err) {
-    assertGuard<Error>(err); // _invariant(err instanceof Error, 'This should never be thrown');
-    handleError(err);
+  } catch (error) {
+    assertGuard<Error>(error);
+    handleError({ error });
     throw new errorClass({
-      privateMessage: err.message,
       ...args,
+      privateMessage: args.privateMessage ?? error.message,
       code: args.code ?? apiErrorCodes.UNKNOWN_ERROR,
       publicMessage: args.publicMessage ?? 'Unknown server error',
     });
@@ -41,7 +41,6 @@ export function invariant(
  */
 export function invariantWithResponse(
   condition: any,
-  /** Private error message */
   message?: string,
   {
     errorClass = ValidationError,
@@ -54,14 +53,14 @@ export function invariantWithResponse(
 ): asserts condition {
   try {
     _invariant(condition, message);
-  } catch (err) {
-    assertGuard<Error>(err); // _invariant(err instanceof Error, 'This should never be thrown');
-    handleError(err);
+  } catch (error) {
+    assertGuard<Error>(error);
+    handleError({ error });
     throw getErrorResponse(
       getPublicErrorResponseData(
         new errorClass({
-          privateMessage: err.message,
           ...args,
+          privateMessage: args.privateMessage ?? error.message,
           code: args.code ?? apiErrorCodes.UNKNOWN_ERROR,
           publicMessage: args.publicMessage ?? 'Unknown server error',
         }),

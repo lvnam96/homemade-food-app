@@ -45,11 +45,11 @@ export const defaultApiRouteErrorHandler = (err: unknown, request: Request) => {
   if (err instanceof Response) throw err; // TODO: decide to return or rethrow Response object
 
   if (err instanceof ServerBaseError) {
-    handleError(err, { request });
+    handleError({ error: err, request });
     throw getGeneralServerErrorResponse(getPublicErrorResponseData(err));
   } else if (err instanceof Error) {
     // Deal with other errors that not wrapped as custom error:
-    handleError(err, { request });
+    handleError({ error: err, request });
     throw getGeneralServerErrorResponse(); // NOTE: message of error is sensitive and should not be sent to client
   } else {
     console.error('Undetected error:', err);

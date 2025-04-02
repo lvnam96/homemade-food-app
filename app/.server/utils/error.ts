@@ -1,6 +1,6 @@
 import { captureException, captureRemixServerException } from '@sentry/remix';
 import { apiErrorCodes, apiErrorResponseStatus, type getErrorResponse } from './api';
-import type { MaybePromise, PartialBy } from '~/utils/types';
+import type { MaybePromise, PartialBy, RequiredBy } from '~/utils/types';
 
 export class ServerBaseError extends Error {
   /** Private message (explaination) that must not be sent to client */
@@ -55,7 +55,6 @@ export const reportError = async ({
   request?: Request;
   reportToSentry?: boolean;
 }) => {
-  console.error(error);
   if (!reportToSentry || process.env.NODE_ENV !== 'production') return;
   if (request)
     await captureRemixServerException(
@@ -66,13 +65,12 @@ export const reportError = async ({
   else captureException(error);
 };
 
-export const handleError = (error: Error, args: Omit<Parameters<typeof reportError>[0], 'error'> = {}) => {
-  reportError({ error, ...args });
-  // switch (error.name) {
-  //   case 'DatabaseError':
-  //   default:
-  //     break;
-  // }
+export const handleError = (args: RequiredBy<Parameters<typeof reportError>[0], 'error'>) => {
+  console.error(args.error);
+
+  // Omit reporting validation errors since we don't want to spam sentry & our error notifications system:
+  if (args.error.name === 'ValidationError') return;
+  else reportError(args);
 };
 
 export const getPublicErrorResponseStatus = (errorCode: ServerBaseError['code']) => apiErrorResponseStatus[errorCode];
