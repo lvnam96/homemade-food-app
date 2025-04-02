@@ -50,6 +50,7 @@ export default defineConfig(({ mode }) => {
             org: 'gary-le',
             project: 'homemade-food-app',
             telemetry: false,
+            authToken: env.SENTRY_AUTH_TOKEN,
           }),
       codecovRemixVitePlugin({
         enableBundleAnalysis: true,
