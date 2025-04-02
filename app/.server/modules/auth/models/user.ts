@@ -13,7 +13,7 @@ import {
 import { comparePassword, getSaltedPassword, hashPassword } from '~/.server/utils/password';
 import { DatabaseError, LogicError } from '~/.server/utils/error';
 import { apiErrorCodes } from '~/.server/utils/api';
-import { decode, encode } from 'punycode/';
+import { decode, encode } from 'punycode';
 
 // import { bigint, date, object, orNull, string } from '@adllang/jsonbinding';
 // export const userJsonBinding = object<UserData>({
