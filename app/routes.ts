@@ -7,5 +7,5 @@ export default [
   index('pages/home/index.tsx'),
 
   // APIs
-  route('/api/auth', '.server/api/auth/index.ts'),
+  route('/api/auth', 'api/auth/index.ts'),
 ] satisfies RouteConfig;

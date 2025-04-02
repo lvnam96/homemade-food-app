@@ -8,7 +8,7 @@ import {
   requireAnonymousUser,
   requireJsonBody,
   requireValidTokenType,
-} from '../middlewares';
+} from '~/.server/api/middlewares';
 import { signUserIn, signUserOut, signUserUp } from '~/.server/modules/auth';
 import { invariant } from '~/.server/utils/invariant';
 
