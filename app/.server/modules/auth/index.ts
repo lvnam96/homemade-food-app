@@ -1,3 +1,4 @@
+import '~/.server/utils/import-env';
 // import { Authenticator } from 'remix-auth';
 // import { type ProviderUser } from './providers/provider';
 import { invariant } from '~/.server/utils/invariant';
@@ -5,11 +6,9 @@ import { signJwt, verifyJwt } from '~/.server/utils/jwt';
 import { createUser, verifyUserPassword } from './models/user';
 import { createAuthSession, deleteAuthSessionById, getAuthSessionById } from './models/session';
 import { makeObjectPropsJsonCompatible } from '~/utils/data';
-import type { Session, UserCredentials, UserCredentialsForInsert, UserData, UserDataForInsert } from './types';
-
-import '~/.server/utils/import-env';
 import { AuthError, LogicError } from '~/.server/utils/error';
 import { apiErrorCodes } from '~/services/api';
+import type { Session, UserCredentials, UserCredentialsForInsert, UserData, UserDataForInsert } from './types';
 
 export * from './models/user';
 export * from './models/session';
@@ -65,6 +64,18 @@ export const verifyTokenClaims = async ({ tokenPayload }: { tokenPayload: Shared
       publicMessage: 'Invalid token claims',
     });
   }
+};
+
+export const verifyAccessToken = async (accessToken: string) => {
+  const tokenPayload = await verifyJwt<AccessTokenPayload>(accessToken);
+  await verifyTokenClaims({ tokenPayload: tokenPayload.payload });
+  return tokenPayload.payload;
+};
+
+export const verifyRefreshToken = async (refreshToken: string) => {
+  const tokenPayload = await verifyJwt<RefreshTokenPayload>(refreshToken);
+  await verifyTokenClaims({ tokenPayload: tokenPayload.payload });
+  return tokenPayload.payload;
 };
 
 export const checkIsValidSessionInTokenPayload = async <
@@ -167,11 +178,9 @@ export const signUserIn = async ({ email, password }: { email: UserCredentials['
 };
 
 export const signUserOut = async (refreshToken: string) => {
-  // const authSession = await authSessionStorage.getSession(request.headers.get('cookie'));
-  // const sessionId = authSession.get(sessionIdKey);
-  const tokenPayload = await verifyJwt<RefreshTokenPayload>(refreshToken);
-  const sessionId = tokenPayload.payload.payload.sessionId;
-  const userId = tokenPayload.payload.payload.user.id;
+  const tokenPayload = await verifyRefreshToken(refreshToken);
+  const sessionId = tokenPayload.payload.sessionId;
+  const userId = tokenPayload.payload.user.id;
 
   if (!sessionId) {
     throw new AuthError({
