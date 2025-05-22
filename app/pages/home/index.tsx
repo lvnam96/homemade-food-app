@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import type { LoaderFunctionArgs, MetaFunction } from '@remix-run/node';
 import { useLoaderData } from '@remix-run/react';
 import { db } from '~/.server/db';

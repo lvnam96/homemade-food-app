@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import { captureRemixErrorBoundaryError } from '@sentry/remix';
 import { Links, Meta, Outlet, Scripts, ScrollRestoration, useRouteError } from '@remix-run/react';
 import type { LinksFunction } from '@remix-run/node';

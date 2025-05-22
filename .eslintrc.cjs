@@ -55,7 +55,7 @@ module.exports = {
     // React
     {
       files: ['**/*.{js,jsx,ts,tsx}'],
-      plugins: ['react', 'jsx-a11y', 'react-hooks'],
+      plugins: ['react', 'jsx-a11y', 'react-hooks', 'react-refresh'],
       extends: [
         'plugin:react/recommended',
         'plugin:react/jsx-runtime',
@@ -63,6 +63,7 @@ module.exports = {
         'plugin:jsx-a11y/recommended',
       ],
       rules: {
+        'react-refresh/only-export-components': 'warn',
         'react/display-name': 'off', // really annoying rule if `forwardedRef`/`memo` are used
         'react/prop-types': 'off',
         'react-hooks/rules-of-hooks': 'error',

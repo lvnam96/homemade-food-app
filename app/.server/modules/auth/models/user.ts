@@ -107,8 +107,7 @@ export const deleteUserByEmail = async (
 };
 
 export const createUser = async (
-  user: Pick<UserCredentialsForInsert, 'email' | 'password'> &
-    Omit<UserDataForInsert, 'createdAt' | 'updatedAt' | 'deletedAt'>,
+  user: Pick<UserCredentialsForInsert, 'email' | 'password'> & Pick<UserDataForInsert, 'displayedName' | 'phoneNumber'>,
   {
     pooledDBInstance,
   }: {
