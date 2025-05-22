@@ -1,5 +1,6 @@
 [![Better Stack Badge](https://uptime.betterstack.com/status-badges/v1/monitor/1omb5.svg)](https://uptime.betterstack.com/?utm_source=status_badge)
 [![codecov](https://codecov.io/github/lvnam96/homemade-food-app/graph/badge.svg?token=FMTEO3MGYC)](https://codecov.io/github/lvnam96/homemade-food-app)
+![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/lvnam96/homemade-food-app?utm_source=oss&utm_medium=github&utm_campaign=lvnam96%2Fhomemade-food-app&labelColor=171717&color=FF570A&link=https%3A%2F%2Fcoderabbit.ai&label=CodeRabbit+Reviews)
 [![wakatime](https://wakatime.com/badge/user/627979e0-f793-4b0a-b22f-899fedaabd2e/project/ee423f4f-df27-4e49-bc46-fee69d5f44b7.svg)](https://wakatime.com/badge/user/627979e0-f793-4b0a-b22f-899fedaabd2e/project/ee423f4f-df27-4e49-bc46-fee69d5f44b7)
 
 ## Useful links
@@ -21,6 +22,15 @@ For first-time database setup, there will be some [SQL scripts](./app/.server/db
 To init development server, run the following commands:
 
 ```bash
+# Match Node.js version
+nvm use # if not using nvm, please install compatible Node.js version specified in `.nvmrc` file
+
+# Enable corepack to use other package managers
+corepack enable
+
+# Install matching version of selected package manager (pnpm)
+corepack install
+
 # Install dependencies (if not installed yet)
 pnpm install
 
@@ -67,3 +77,8 @@ pnpm dev:down
 - Use `import '~/.server/utils/import-env'` & `process.env` to access private (server-only) variables (not prefixed with `PUBLIC_`).
 - Use `import.meta.env` to access public (client & server) variables (prefixed with `PUBLIC_`).
 - Remember to specify variables in [`./app/env.d.ts`](./app/env.d.ts) file.
+
+| Variables                      | Description                                        |
+| ------------------------------ | -------------------------------------------------- |
+| `SESSION_COOKIE_SECRET`        | Used for signing auth session cookie               |
+| `PUBLIC_SESSION_COOKIE_DOMAIN` | Value of `domain` attribute of auth session cookie |
